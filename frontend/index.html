@@ -8,13 +8,14 @@
     <link rel="stylesheet" href="/vendor/adminhmd/css/bootstrap.min.css">
     <link rel="stylesheet" href="/vendor/adminhmd/vendors/bootstrap-icons/bootstrap-icons.css">
     <link rel="stylesheet" href="/vendor/adminhmd/css/style.css">
-    <link rel="stylesheet" href="/styles.css?v=admin-sales-2">
+    <link rel="stylesheet" href="/styles.css?v=paypal-1">
     <script src="/js/invoice-qr.js?v=qr-1" defer></script>
-    <script src="/js/invoice-pdf.js?v=admin-sales-2" defer></script>
+    <script src="/js/invoice-pdf.js?v=paypal-1" defer></script>
     <script src="/vendor/chartjs/chart.umd.min.js" defer></script>
     <script src="/js/reports.js?v=reports-final-1" defer></script>
-    <script src="/js/sales-history.js?v=admin-sales-2" defer></script>
-    <script src="/app.js?v=admin-sales-2" defer></script>
+    <script src="/js/sales-history.js?v=paypal-1" defer></script>
+    <script src="/js/paypal-checkout.js?v=paypal-1" defer></script>
+    <script src="/app.js?v=paypal-1" defer></script>
 </head>
 <body class="pos-login">
     <!-- Estructura de AdminHMD adaptada: solo aparecen módulos implementados. -->
@@ -188,6 +189,9 @@
                 </table></div>
                 <h3 class="h6 mt-4">Carrito</h3>
                 <form id="checkout-form">
+                    <label for="payment-method" class="form-label">Método de pago</label>
+                    <select id="payment-method" class="form-select mb-2"><option value="efectivo">Efectivo</option><option id="payment-paypal-option" value="tarjeta" disabled>PayPal Sandbox (prueba)</option></select>
+                    <p id="payment-configuration" class="hint">Consultando medios de pago…</p>
                     <!-- Los datos se guardan con la venta, no se agregan después de descontar el stock. -->
                     <fieldset id="buyer-fields" class="buyer-fields">
                         <legend class="h6">Datos de facturación</legend>
@@ -347,6 +351,14 @@
         <p id="sale-change-error" role="status" class="text-danger"></p>
         <div class="actions"><button type="button" id="sale-change-close" class="btn btn-outline-secondary">Cancelar</button><button id="sale-change-save" class="btn btn-primary" type="submit">Guardar</button></div>
     </form>
+</dialog>
+<!-- No se cargan formularios de tarjetas dentro de FerreSync. -->
+<dialog id="paypal-dialog" class="panel" style="width:min(650px,94vw);border:1px solid #bccdc9;border-radius:14px">
+<h2 class="h5">Pago con PayPal Sandbox</h2><p id="paypal-total"></p>
+<p id="paypal-status" role="status"></p>
+<p class="hint">Las existencias quedan apartadas mientras el pago esté pendiente. Cerrar esta ventana no anula la venta; el administrador puede anularla desde el historial.</p>
+<div class="actions"><a id="paypal-approve" class="btn btn-primary" target="_blank" rel="noopener noreferrer" hidden>Abrir PayPal Sandbox</a>
+<button id="paypal-confirm" type="button" class="btn btn-success">Verificar pago</button><button id="paypal-retry" type="button" class="btn btn-outline-secondary">Reintentar preparación</button><button id="paypal-close" type="button" class="btn btn-outline-secondary">Cerrar</button></div>
 </dialog>
 </body>
 </html>

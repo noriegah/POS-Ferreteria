@@ -30,3 +30,5 @@ Las guías conservan la historia de los bloques. Para una instalación, seguir p
 - [Estado de entrega](entrega/estado.md)
 - [Documento PDF](entrega/FerreSync-proyecto.pdf)
 - [Guion de presentación](entrega/guion-demo.md)
+
+- [PayPal Sandbox y configuración](integraciones/pagos.md)

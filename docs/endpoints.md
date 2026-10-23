@@ -65,3 +65,7 @@ No ejecutar estos ejemplos sobre ventas reales para practicar. Usar fixtures o u
 ## Rutas internas
 
 Inventario ofrece POST /ventas/descontar y POST /ventas/devolver para Ventas. Requieren JWT y X-Ventas-Key; devolver exige además administrador. El cliente no decide las cantidades a devolver: Inventario las obtiene del descuento guardado. Ventas ofrece /reportes/resumen y /reportes/exportar para Reportes, con permiso de administrador. No se incluyen claves internas en el frontend ni en esta guía.
+
+## PayPal Sandbox
+
+GET /api/ventas/pagos/config devuelve disponibilidad y tasa sin credenciales. POST /api/ventas/{id}/pago/orden prepara o recupera la orden, y POST /api/ventas/{id}/pago/confirmar verifica y captura el cobro. Son rutas del propietario o administrador; config requiere usuario activo. Al registrar una compra, metodo_pago puede ser efectivo (predeterminado) o tarjeta (PayPal Sandbox). Tarjeta requiere credenciales configuradas; la factura devuelve 409 mientras la venta esté pendiente_pago. Ver integraciones/pagos.md.

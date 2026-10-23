@@ -2,10 +2,11 @@
 declare(strict_types=1);
 // Carga las clases propias de Ventas y la biblioteca JWT ya usada por los otros servicios.
 require_once __DIR__ . '/../vendor/autoload.php';
-foreach (['Database','TokenService','AuthClient','Checkout','InventoryClient','Buyer','Sales','InvoicePdf','SalesReports','SalesHistory','SaleChanges','Customers'] as $class) {
+foreach (['Database','TokenService','AuthClient','Checkout','InventoryClient','Buyer','Sales','InvoicePdf','SalesReports','SalesHistory','SaleChanges','Customers','Payments'] as $class) {
     require_once __DIR__ . '/../src/' . $class . '.php';
 }
 require_once __DIR__ . '/../src/integrations/QrCodeClient.php';
+require_once __DIR__ . '/../src/integrations/PayPalClient.php';
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 header('X-Content-Type-Options: nosniff');
@@ -26,6 +27,17 @@ try {
     if ($path === '/health' && $method === 'GET') { respond(200, ['service'=>'ventas-service', 'status'=>'ok', 'phase'=>1, 'instancia'=>gethostname()]); }
     if ($path === '/ready' && $method === 'GET') {
         Database::connect()->query('SELECT 1'); respond(200, ['service'=>'ventas-service','status'=>'ok','database'=>'ok']);
+    }
+    // El navegador solo conoce si Sandbox está configurado; nunca recibe las credenciales.
+    if($path==='/pagos/config') {
+        AuthClient::current(); methods(['GET']);
+        respond(200,['paypal_disponible'=>PayPalClient::ready(),'tasa_demo'=>PayPalClient::rate(),'moneda'=>'USD']);
+    }
+    if(preg_match('#^/([0-9]+)/pago/(orden|confirmar)$#D',$path,$payment)) {
+        $claims=AuthClient::current(); methods(['POST']);
+        $service=new Payments(Database::connect()); $id=Checkout::id($payment[1]);
+        if($payment[2]==='orden') respond(200,['pago'=>$service->order($id,$claims)]);
+        respond(200,['venta'=>$service->capture($id,$claims)]);
     }
     // Solo el administrador obtiene estadísticas; nunca se comparten datos del comprador en los gráficos.
     if (in_array($path, ['/reportes/resumen','/reportes/exportar'], true)) {

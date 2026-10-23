@@ -73,6 +73,10 @@ services:
     environment:
       DB_HOST: db-primary
       DB_NAME: ventas_db
+      PAYPAL_CLIENT_ID: ${PAYPAL_CLIENT_ID:-}
+      PAYPAL_CLIENT_SECRET: ${PAYPAL_CLIENT_SECRET:-}
+      PAYPAL_USD_RATE: ${PAYPAL_USD_RATE:-7.80}
+      PAYPAL_RETURN_URL: ${PAYPAL_RETURN_URL:-http://localhost:8080/pago-retorno.html}
       REPORTS_DB_HOST: db-replica
       REPORTS_DB_USER: ${REPORTS_DB_USER:?Configure REPORTS_DB_USER in .env}
       REPORTS_DB_PASSWORD: ${REPORTS_DB_PASSWORD:?Configure REPORTS_DB_PASSWORD in .env}

@@ -43,3 +43,7 @@ Este registro descuenta existencias, pero todavía no representa un cobro con ta
 ## Resultado de esta entrega
 
 Pasaron las 35 comprobaciones de Ventas, la regresión de Inventario y la batería JWT. PHP, JavaScript, Nginx y Compose pasaron sus comprobaciones de sintaxis/configuración. Se confirmó que Ventas no puede consultar auth_db ni inventario_db. En navegador se registraron 2 unidades a Q 12.50 (total Q 25.00), con stock de 10 a 8; también se revisó la tabla en vista móvil. Los datos de prueba se eliminaron y el producto existente CO-001 conservó precio Q 429.00, 15 unidades y mínimo 3.
+
+## PayPal Sandbox
+
+Se añadió pago externo de prueba con importes de venta en Q y conversión académica a USD. Las ventas pendientes apartan existencias; solo las confirmadas aparecen en reportes y permiten factura. El cajero continúa sus pagos desde Caja o Historial; las anulaciones y reembolsos son exclusivos del administrador. Integración preparada y probada localmente, pendiente de credenciales y prueba externa. Ver integraciones/pagos.md.

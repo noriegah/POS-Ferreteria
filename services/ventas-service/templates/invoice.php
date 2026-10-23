@@ -30,7 +30,7 @@ td,th { vertical-align: top; overflow-wrap: break-word; }
     <div class="muted">Sistema de punto de venta · Proyecto universitario</div>
 </td><td class="right"><div class="title">FACTURA</div>
     <strong><?= $escape($invoice['numero']) ?></strong><br>
-    Fecha: <?= $escape($date) ?><br>Moneda: GTQ - Quetzales
+    Fecha: <?= $escape($date) ?><br>Moneda: GTQ - Quetzales<br>Pago: <?= ($invoice['metodo_pago'] ?? 'efectivo')==='tarjeta' ? 'PayPal Sandbox' : 'Efectivo' ?>
 </td></tr></table>
 <?php if(($invoice['estado'] ?? 'confirmada')!=='confirmada'): ?>
 <div class="box" style="border:2px solid #ad3030;color:#ad3030;font-size:16px"><strong><?= $invoice['estado']==='anulada' ? 'COMPROBANTE ANULADO' : 'ANULACIÓN EN PROCESO' ?></strong><p style="font-size:10px"><?= $escape($invoice['anulacion_motivo']) ?></p></div>

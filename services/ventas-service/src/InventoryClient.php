@@ -4,14 +4,14 @@ declare(strict_types=1);
 // Ventas pide el descuento por HTTP; no tiene permisos sobre inventario_db.
 final class InventoryClient
 {
-    public static function discount(string $reference, array $items, bool $identified = false): array
+    public static function discount(string $reference, array $items, bool $identified = false, int $minimum = 0): array
     {
         $base = getenv('INVENTARIO_URL'); $key = getenv('VENTAS_INTERNAL_KEY');
         if (!$base || !$key) { throw new HttpError(503, 'Falta configurar la comunicación con Inventario'); }
         $curl = curl_init(rtrim($base, '/') . '/ventas/descontar');
         curl_setopt_array($curl, [
             CURLOPT_POST=>true,
-            CURLOPT_POSTFIELDS=>json_encode(['referencia'=>$reference, 'productos'=>$items, 'comprador_identificado'=>$identified], JSON_THROW_ON_ERROR),
+            CURLOPT_POSTFIELDS=>json_encode(['referencia'=>$reference, 'productos'=>$items, 'comprador_identificado'=>$identified,'total_minimo_centavos'=>$minimum], JSON_THROW_ON_ERROR),
             CURLOPT_HTTPHEADER=>['Content-Type: application/json', 'Accept: application/json',
                 'Authorization: ' . $_SERVER['HTTP_AUTHORIZATION'], 'X-Ventas-Key: ' . $key],
             CURLOPT_RETURNTRANSFER=>true, CURLOPT_CONNECTTIMEOUT=>2, CURLOPT_TIMEOUT=>8, CURLOPT_FOLLOWLOCATION=>false,

@@ -73,6 +73,8 @@ Los servicios de Auth, Inventario y Ventas tienen `public/` para recibir peticio
 7. Reportes: filtros por fechas, Chart.js por día/semana/mes, rankings, listado y PDF; consulta a Ventas por REST.
 8. Abrir scripts y tests para mostrar cómo se valida cada bloque con datos temporales.
 
-La réplica y el balanceo de Ventas están implementados. Clima tiene cliente e interfaz pendientes de clave y prueba real. Pagos Sandbox y despliegue en Hostinger continúan pendientes. La organización permite incorporarlos en su servicio correspondiente, sin mezclar todo en la raíz.
+La réplica y el balanceo de Ventas están implementados. Clima tiene cliente e interfaz pendientes de clave y prueba real. PayPal Sandbox está implementado y pendiente de validación con una cuenta propia; el despliegue en Hostinger continúa pendiente. La organización permite incorporarlos en su servicio correspondiente, sin mezclar todo en la raíz.
 
 Los cambios administrativos viven en SaleChanges.php; Customers.php mantiene el cliente. StockReturns.php devuelve el descuento original en Inventario. Las migraciones 006–008 añaden estados, auditoría, clientes, pagos y cambios de acceso. Ver base-datos.md y roles-permisos.md para explicar las relaciones.
+
+Payments.php coordina estados y PayPalClient.php contiene el cliente REST Sandbox. frontend/js/paypal-checkout.js controla la ventana de pago. scripts/configure-paypal.ps1 y configure-weather.ps1 validan credenciales antes de escribirlas en .env.

@@ -66,7 +66,12 @@ const SalesHistoryView = (() => {
                     catch(error) { el('history-status').textContent = error.message; }
                     finally { button.disabled = false; }
                 });
+                button.disabled=sale.estado==='pendiente_pago' || (sale.facturable!==undefined && Number(sale.facturable)!==1);
                 action.append(button);
+                if(sale.estado==='pendiente_pago') {
+                    const pay=document.createElement('button');pay.type='button';pay.className='btn btn-primary btn-sm ms-2';pay.textContent='Continuar pago';
+                    pay.addEventListener('click',()=>PayPalCheckout.open(sale.id));action.append(pay);
+                }
                 // La API vuelve a verificar el rol; ocultar el botón es solo una ayuda visual.
                 if(getUser().rol==='administrador' && sale.estado!=='anulada') {
                     const cancel=document.createElement('button'); cancel.type='button';

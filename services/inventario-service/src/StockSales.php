@@ -60,6 +60,10 @@ final class StockSales
     }
     private static function checkBuyer(string $total, object $data): void
     {
+        // Ventas puede exigir un mínimo antes de que se confirme el descuento completo.
+        $minimum=$data->total_minimo_centavos ?? 0;
+        if(!is_int($minimum) || $minimum<0 || $minimum>999999999999) throw new HttpError(422,'Mínimo de compra inválido');
+        if(Checkout::cents($total)<$minimum) throw new HttpError(422,'El total es demasiado pequeño para pagar con PayPal Sandbox');
         if (Checkout::cents($total)>=250000 && ($data->comprador_identificado ?? false)!==true) throw new HttpError(422, 'Desde Q 2,500.00 se requiere NIT, nombre y dirección del comprador');
     }
 }

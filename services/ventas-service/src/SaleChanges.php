@@ -4,7 +4,7 @@ declare(strict_types=1);
 // Cambios administrativos separados del registro normal de ventas.
 final class SaleChanges
 {
-    public function __construct(private PDO $db) {}
+    public function __construct(private PDO $db,private ?Payments $payments=null) {}
 
     private static function reason(object $data): string
     {
@@ -35,7 +35,7 @@ final class SaleChanges
         $this->db->beginTransaction();
         try {
             $sale=$this->lock($id);
-            if($sale['estado']==='confirmada') {
+            if(in_array($sale['estado'],['confirmada','pendiente_pago'],true)) {
                 $q=$this->db->prepare("UPDATE ventas SET estado='anulando',anulacion_motivo=?,anulacion_usuario_id=? WHERE id=?");
                 $q->execute([$reason,$claims->sub,$id]);
                 $this->event($sale,$claims->sub,'solicitar_anulacion',$reason,['estado'=>'anulando']);
@@ -44,6 +44,7 @@ final class SaleChanges
         } catch(Throwable $error) { if($this->db->inTransaction()) $this->db->rollBack(); throw $error; }
         if($sale['estado']!=='anulada') {
             // Inventario conserva su recibo: repetir esta llamada no devuelve dos veces.
+            if($sale['metodo_pago']==='tarjeta') ($this->payments ?? new Payments($this->db))->refund($id,$claims);
             InventoryClient::restore($sale['referencia']);
             $this->db->beginTransaction();
             try {

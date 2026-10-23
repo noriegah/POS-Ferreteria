@@ -33,3 +33,7 @@ Si los productos o las cantidades eran incorrectos, se anula la venta y se regis
 Los usuarios de negocio no son cuentas SQL. auth_app, inventario_app y ventas_app tienen SELECT, INSERT, UPDATE y DELETE únicamente en su base. Los nombres reales se toman de .env. La cuenta de reportes tiene SELECT en ventas_db de la réplica y REPLICA MONITOR. ferresync_consulta permite explorar las bases con SELECT. Estas cuentas no se modifican desde Usuarios; se aprovisionan mediante los scripts administrativos.
 
 Validación: scripts/test-sale-changes.ps1. Incluye 42 comprobaciones de permisos, clientes, cobro, auditoría, fallos REST, reintentos y cambios de acceso.
+
+## Pagos externos
+
+El cajero puede preparar y confirmar el pago de sus ventas; el administrador también puede consultar y completar pagos. Solo el administrador anula reservas o reembolsa pagos al anular. Una venta pendiente no se edita ni emite factura. La devolución de existencias ocurre después de confirmar el reembolso Sandbox, si hubo cobro.

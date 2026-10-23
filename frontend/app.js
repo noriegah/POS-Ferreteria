@@ -72,6 +72,7 @@ function logout() {
     $("sales-results").replaceChildren(); $("sales-search-form").reset();
     $("sale-result").hidden = true;
     clearInvoice();
+    PayPalCheckout.clear();
     ReportView.clear();
     SalesHistoryView.clear();
     $("invoice-form").reset();
@@ -248,6 +249,7 @@ $("login-form").addEventListener("submit", (event) => {
         const profile = await api("auth/me");
         user = profile.user;
         restoreCheckout();
+        PayPalCheckout.configure();
         document.body.classList.remove("pos-login");
         $("menu-toggle").hidden = false;
         document.querySelectorAll("[data-admin-only]").forEach((link) => { link.hidden = user.rol !== "administrador"; });
@@ -464,6 +466,7 @@ function restoreCheckout() {
             const saved = JSON.parse(raw);
             if (!saved.request || !Array.isArray(saved.cart)) throw new Error("Carrito inválido");
             pendingSale = saved.request; cart = saved.cart;
+            $("payment-method").value=pendingSale.metodo_pago || "efectivo";
             const buyer=pendingSale.comprador;
             $("buyer-type").value=buyer?.nit ? "nit" : "cf";
             $("buyer-nit").value=buyer?.nit || "";
@@ -520,6 +523,7 @@ function renderCart() {
     $("save-sale").textContent = pendingSale ? "Reintentar confirmación" : "Registrar venta";
     $("clear-cart").disabled = !cart.length || Boolean(pendingSale);
     $("checkout-pending").hidden = !pendingSale;
+    $("payment-method").disabled=Boolean(pendingSale);
     $("sales-results").querySelectorAll("button").forEach((button) => { button.disabled = Boolean(pendingSale) || button.dataset.available === "false"; });
 }
 
@@ -569,7 +573,7 @@ $("checkout-form").addEventListener("submit", (event) => {
             const comprador=$("buyer-type").value === "cf" ? {nombre:"CF"} : {
                 nombre:$("buyer-name").value.trim(),nit:$("buyer-nit").value.trim(),direccion:$("buyer-address").value.trim()
             };
-            const request = {referencia: crypto.randomUUID(), productos: cart.map((item) => ({producto_id: String(item.id), cantidad: item.cantidad})), comprador};
+            const request = {referencia: crypto.randomUUID(), metodo_pago:$("payment-method").value, productos: cart.map((item) => ({producto_id: String(item.id), cantidad: item.cantidad})), comprador};
             // Guarda antes de enviar. Si no se puede conservar la referencia, no inicia el descuento.
             sessionStorage.setItem(checkoutKey(owner), JSON.stringify({request, cart}));
             pendingSale = request;
@@ -585,25 +589,40 @@ $("checkout-form").addEventListener("submit", (event) => {
             if (token === session) renderCart();
             throw error;
         }
-        sessionStorage.removeItem(checkoutKey(owner));
         if (token !== session) return;
-        cart = []; pendingSale = null; renderCart();
-        $("buyer-type").value="cf";
-        for(const id of ["buyer-nit","buyer-name","buyer-address"]) $(id).value="";
-        updateBuyer(0);
-        $("sales-results").replaceChildren();
-        $("sales-results-label").textContent = "Venta guardada. Busca productos para la siguiente venta.";
-        $("sale-result").textContent = `Venta #${data.venta.id} registrada. Total: ${money(data.venta.total)}. Stock actualizado.`;
-        $("sale-result").hidden = false;
-        // La venta ya quedó registrada aunque una consulta posterior del listado falle.
-        // Las consultas pueden fallar sin afectar la venta ya guardada.
-        $("invoice-sale-id").value = data.venta.id;
-        try { await loadInvoice(data.venta.id,"sales-panel"); }
-        catch (error) { message(`Venta registrada. Consulta su factura con el número ${data.venta.id}: ${error.message}`, true); }
-        try { await loadProducts(); await loadAlerts(); }
-        catch (error) { message(`Venta registrada. No se pudo actualizar el listado: ${error.message}`, true); }
+        if(data.venta.estado==='pendiente_pago') { await PayPalCheckout.open(data.venta.id); return; }
+        if(data.venta.estado!=='confirmada') { releaseCancelledCheckout(data.venta); throw new Error('La venta fue anulada. Registra una nueva compra si corresponde.'); }
+        await completeCheckout(data);
+
     });
 });
+
+
+// Libera únicamente el carrito relacionado; no toca otra compra que esté en preparación.
+function releaseCancelledCheckout(sale) {
+    if(pendingSale?.referencia===sale.referencia) {
+        sessionStorage.removeItem(checkoutKey());cart=[];pendingSale=null;renderCart();
+    }
+}
+async function completeCheckout(data) {
+    const related=pendingSale?.referencia===data.venta.referencia;
+    if(related) {
+        sessionStorage.removeItem(checkoutKey());cart=[];pendingSale=null;renderCart();
+        $("buyer-type").value="cf";
+        for(const id of ["buyer-nit","buyer-name","buyer-address"]) $(id).value="";
+        $("payment-method").value="efectivo";updateBuyer(0);
+        $("sales-results").replaceChildren();
+        $("sales-results-label").textContent="Venta guardada. Busca productos para la siguiente venta.";
+    }
+    $("sale-result").textContent=`Venta #${data.venta.id} confirmada. Total: ${money(data.venta.total)}.`;
+    $("sale-result").hidden=false; $("invoice-sale-id").value=data.venta.id;
+    const origin=$("sales-history-panel").hidden ? "sales-panel" : "sales-history-panel";
+    try {if(origin==="sales-history-panel") await SalesHistoryView.open();await loadInvoice(data.venta.id,origin);}
+    catch(error) {message(`Venta confirmada. Consulta su factura con el número ${data.venta.id}: ${error.message}`,true);}
+    try {await loadProducts();await loadAlerts();}
+    catch(error) {message(`Venta confirmada. No se pudo actualizar el listado: ${error.message}`,true);}
+}
+PayPalCheckout.init({api,getToken:()=>token,onPaid:completeCheckout,onCancelled:releaseCancelledCheckout});
 
 // Quita datos de una factura anterior antes de consultar otra o cerrar sesión.
 function clearInvoice() {

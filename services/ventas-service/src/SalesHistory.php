@@ -26,7 +26,7 @@ final class SalesHistory
             $q = $db->prepare('SELECT COUNT(*) AS ventas,COALESCE(SUM(CASE WHEN estado=\'confirmada\' THEN total ELSE 0 END),0.00) AS total FROM ventas WHERE '.$where);
             $q->execute($values); $summary = $q->fetch(); $summary['ventas'] = (int)$summary['ventas'];
             $pages = max(1,(int)ceil($summary['ventas']/25)); $page = min($page,$pages); $offset = ($page-1)*25;
-            $q = $db->prepare("SELECT id,usuario_id,comprador_nombre,total,estado,DATE_FORMAT(DATE_SUB(creado_en,INTERVAL 6 HOUR),'%Y-%m-%d %H:%i') AS fecha FROM ventas WHERE $where ORDER BY creado_en DESC,id DESC LIMIT 25 OFFSET $offset");
+            $q = $db->prepare("SELECT id,usuario_id,comprador_nombre,total,estado,CASE WHEN metodo_pago='efectivo' THEN 1 ELSE EXISTS(SELECT 1 FROM pagos p WHERE p.venta_id=ventas.id AND p.captura_externa IS NOT NULL) END AS facturable,DATE_FORMAT(DATE_SUB(creado_en,INTERVAL 6 HOUR),'%Y-%m-%d %H:%i') AS fecha FROM ventas WHERE $where ORDER BY creado_en DESC,id DESC LIMIT 25 OFFSET $offset");
             $q->execute($values); $sales = $q->fetchAll();
             $db->commit();
             return ['periodo'=>['desde'=>$dates['desde']->format('Y-m-d'),'hasta'=>$dates['hasta']->format('Y-m-d'),'zona'=>'America/Guatemala'],
