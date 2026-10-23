@@ -1,0 +1,18 @@
+# No subir credenciales, claves, respaldos ni dependencias generadas al repositorio.
+.env
+*.log
+.DS_Store
+.backups/
+secrets/
+**/vendor/
+
+# Las imágenes cargadas son datos locales; no forman parte del código.
+uploads/productos/*
+!uploads/productos/.gitkeep
+# Los QR de facturas son archivos generados, separados de las imágenes de productos.
+uploads/facturas-qr/*
+!uploads/facturas-qr/.gitkeep
+
+# Recursos del frontend incluidos deliberadamente para ejecutar sin CDN.
+!frontend/vendor/
+!frontend/vendor/**

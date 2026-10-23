@@ -1,0 +1,4 @@
+# Evita copiar dependencias locales y posibles secretos al construir la imagen.
+vendor/
+.env
+*.pem

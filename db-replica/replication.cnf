@@ -1,0 +1,7 @@
+[mariadb]
+# Réplica: recibe ventas_db y acepta únicamente consultas de la aplicación.
+server_id=2
+relay_log=ferresync-relay
+relay_log_recovery=ON
+read_only=ON
+replicate_wild_do_table=ventas_db.%

@@ -1,0 +1,4 @@
+{
+  "require": { "php": "^8.3", "dompdf/dompdf": "^3.1" },
+  "config": { "sort-packages": true, "allow-plugins": false }
+}

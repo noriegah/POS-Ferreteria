@@ -1,0 +1,9 @@
+{
+  "require": {
+    "php": "^8.3",
+    "ext-openssl": "*",
+    "dompdf/dompdf": "^3.1",
+    "firebase/php-jwt": "^6.11 || ^7.0"
+  },
+  "config": { "sort-packages": true, "allow-plugins": false }
+}

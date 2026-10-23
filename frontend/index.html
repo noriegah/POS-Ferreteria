@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="es" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FerreSync | Inventario y Ventas</title>
+    <!-- Estilos originales de AdminHMD, Bootstrap e iconos guardados en el proyecto. -->
+    <link rel="stylesheet" href="/vendor/adminhmd/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/vendor/adminhmd/vendors/bootstrap-icons/bootstrap-icons.css">
+    <link rel="stylesheet" href="/vendor/adminhmd/css/style.css">
+    <link rel="stylesheet" href="/styles.css?v=admin-sales-2">
+    <script src="/js/invoice-qr.js?v=qr-1" defer></script>
+    <script src="/js/invoice-pdf.js?v=admin-sales-2" defer></script>
+    <script src="/vendor/chartjs/chart.umd.min.js" defer></script>
+    <script src="/js/reports.js?v=reports-final-1" defer></script>
+    <script src="/js/sales-history.js?v=admin-sales-2" defer></script>
+    <script src="/app.js?v=admin-sales-2" defer></script>
+</head>
+<body class="pos-login">
+    <!-- Estructura de AdminHMD adaptada: solo aparecen módulos implementados. -->
+    <div class="admin-shell">
+        <button type="button" class="sidebar-backdrop" data-sidebar-close aria-label="Cerrar menú"></button>
+        <aside class="admin-sidebar" id="adminSidebar" aria-label="Menú principal" inert>
+            <div class="sidebar-header">
+                <a class="brand-mark" href="#dashboard-panel">
+                    <span class="brand-icon"><img src="/assets/logo.svg?v=ferresync-1" width="46" height="46" alt=""></span>
+                    <span class="brand-copy"><span class="brand-title">FerreSync</span><span class="brand-subtitle">Punto de venta</span></span>
+                </a>
+            </div>
+            <nav class="sidebar-nav" aria-label="Módulos">
+                <p class="nav-caption">PRINCIPAL</p>
+                <a class="nav-link" href="#dashboard-panel"><span class="nav-icon"><i class="bi bi-grid-1x2" aria-hidden="true"></i></span><span class="nav-text">Dashboard</span></a>
+                <a class="nav-link" href="#sales-panel"><span class="nav-icon"><i class="bi bi-cart" aria-hidden="true"></i></span><span class="nav-text">Caja</span></a>
+                <a class="nav-link" href="#sales-history-panel"><span class="nav-icon"><i class="bi bi-receipt" aria-hidden="true"></i></span><span class="nav-text">Historial de ventas</span></a>
+                <a class="nav-link" href="#list-panel"><span class="nav-icon"><i class="bi bi-box-seam" aria-hidden="true"></i></span><span class="nav-text">Productos</span></a>
+                <a class="nav-link" href="#reports-panel" data-admin-only hidden><span class="nav-icon"><i class="bi bi-bar-chart" aria-hidden="true"></i></span><span class="nav-text">Reportes</span></a>
+                <a class="nav-link" href="#product-panel" data-admin-only hidden><span class="nav-icon"><i class="bi bi-plus-square" aria-hidden="true"></i></span><span class="nav-text">Registrar producto</span></a>
+                <a class="nav-link" href="#category-panel" data-admin-only hidden><span class="nav-icon"><i class="bi bi-tags" aria-hidden="true"></i></span><span class="nav-text">Categorías</span></a>
+                <a class="nav-link" href="#users-panel" data-admin-only hidden><span class="nav-icon"><i class="bi bi-people" aria-hidden="true"></i></span><span class="nav-text">Usuarios</span></a>
+            </nav>
+            <div class="sidebar-footer"><i class="bi bi-shop" aria-hidden="true"></i><span class="sidebar-footer-text">Orden para tu negocio</span></div>
+        </aside>
+        <div class="admin-main">
+            <header class="navbar admin-navbar bg-white">
+                <div class="container-fluid px-3 px-lg-4 gap-3">
+                    <button id="menu-toggle" class="sidebar-toggle" type="button" aria-controls="adminSidebar" aria-expanded="false" aria-label="Abrir o reducir menú" hidden><span></span><span></span><span></span></button>
+                    <a class="navbar-brand mb-0 fw-bold" href="#dashboard-panel">FerreSync <span class="topbar-tag">GESTIÓN</span></a>
+                    <div id="session-panel" class="ms-auto d-flex align-items-center gap-3 flex-wrap" hidden>
+                        <span id="user-label" class="small fw-semibold"></span>
+                        <button id="logout" type="button" class="btn btn-outline-secondary btn-sm">Cerrar sesión</button>
+                    </div>
+                </div>
+            </header>
+            <main class="dashboard-content">
+                <div class="container-fluid px-3 px-lg-4 py-4">
+                    <!-- Los mensajes y los formularios siguen conectados a la misma API JWT. -->
+                    <p id="message" class="alert" role="status" aria-live="polite" hidden></p>
+        <section id="login-section" class="auth-card login-card" aria-labelledby="login-title">
+            <p class="eyebrow mb-2">Bienvenido</p><h2 class="h3" id="login-title">Iniciar sesión</h2>
+            <p>Ingresa con tu cuenta para consultar el inventario.</p>
+            <form id="login-form">
+                <label class="form-label" for="email">Correo electrónico</label>
+                <input class="form-control" id="email" type="email" autocomplete="username" required maxlength="254">
+                <label class="form-label" for="password">Contraseña</label>
+                <input class="form-control" id="password" type="password" autocomplete="current-password" required>
+                <button class="btn btn-primary w-100" type="submit">Ingresar</button>
+            </form>
+            <p class="hint">La sesión dura 15 minutos. Al recargar la página tendrás que ingresar de nuevo.</p>
+        </section>
+
+        <div id="inventory-section" hidden>
+            <div class="page-heading">
+                <div class="page-heading-copy">
+                    <span class="page-icon"><i class="bi bi-box-seam" aria-hidden="true"></i></span>
+                    <div><p class="eyebrow mb-1">FerreSync</p><h1 id="view-title" class="h3 mb-1">Dashboard</h1><p id="view-description" class="text-muted mb-0">El resumen de tu ferretería.</p></div>
+                </div>
+            </div>
+
+            <!-- Las alertas usan el umbral de menos de 5 unidades solicitado en la guía. -->
+            <!-- Resumen real de Inventario, sin gráficos ni cifras de ejemplo. -->
+            <section id="dashboard-panel" hidden aria-label="Resumen de la ferretería">
+                <div class="dashboard-hero">
+                    <div><p class="hero-kicker">TU CENTRO DE TRABAJO</p><h2>Tu ferretería,<br>de un vistazo.</h2><p>Revisa tus existencias y encuentra lo que necesitas para comenzar.</p><a href="#sales-panel" class="btn btn-warning">Abrir caja <i class="bi bi-arrow-right" aria-hidden="true"></i></a></div>
+                    <div class="hero-art" aria-hidden="true"><i class="bi bi-shop"></i><span>INVENTARIO · CAJA · CONTROL</span></div>
+                </div>
+                <div class="dashboard-stats">
+                    <a href="#list-panel" class="stat-card" id="products-stat"><span class="stat-icon teal"><i class="bi bi-box-seam" aria-hidden="true"></i></span><div><span>Productos activos</span><strong id="dashboard-products">—</strong><small>Consultar inventario →</small></div></a>
+                    <a href="#category-panel" class="stat-card" id="category-stat"><span class="stat-icon blue"><i class="bi bi-tags" aria-hidden="true"></i></span><div><span>Categorías</span><strong id="dashboard-categories">—</strong><small id="category-stat-note">Organizar productos →</small></div></a>
+                    <a href="#list-panel" class="stat-card" id="stock-stat"><span class="stat-icon amber"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i></span><div><span>Stock bajo</span><strong id="dashboard-low">—</strong><small>Productos con menos de 5 unidades</small></div></a>
+                </div>
+                <div class="panel mb-3" data-admin-only hidden><h2 class="h5"><i class="bi bi-cloud-sun" aria-hidden="true"></i> Clima del día</h2><p data-weather role="status">Consultando clima…</p><small class="hint">Fuente: OpenWeatherMap</small></div>
+                <div class="panel dashboard-shortcuts"><div><p class="eyebrow">A UN CLIC</p><h2 class="h5">¿Qué necesitas hacer?</h2></div><div class="actions"><a href="#product-panel" class="btn btn-primary" data-admin-only hidden><i class="bi bi-plus-lg" aria-hidden="true"></i> Nuevo producto</a><a href="#list-panel" class="btn btn-outline-secondary">Consultar productos</a><a href="#users-panel" class="btn btn-outline-secondary" data-admin-only hidden>Gestionar usuarios</a></div></div>
+            <section id="alerts-panel" class="alert alert-warning" aria-labelledby="alerts-title" hidden>
+                <h2 id="alerts-title" class="h6">Productos con stock bajo (menos de 5 unidades)</h2>
+                <ul id="alerts-list" class="mb-0"></ul>
+            </section>
+                <p id="dashboard-no-alerts" class="stock-ok" hidden><i class="bi bi-check-circle" aria-hidden="true"></i> Tus productos activos tienen al menos 5 unidades disponibles.</p>
+            </section>
+            <!-- El cajero puede consultar la tabla; los formularios son para el administrador. -->
+            <div id="admin-section" class="row g-4 mb-4" hidden>
+                <section id="product-panel" class="panel" aria-labelledby="product-title">
+                    <h2 class="h5" id="product-title">Nuevo producto</h2>
+                    <p id="category-help" class="hint">Primero <a href="#category-panel">crea una categoría</a> para registrar productos.</p>
+                    <form id="product-form">
+                        <fieldset id="product-fields">
+                            <div class="two-columns">
+                                <div><label class="form-label" for="code">Código de barras o código interno</label><input class="form-control" id="code" maxlength="64" placeholder="Automático si lo dejas vacío" aria-describedby="code-help"><p id="code-help" class="hint small mt-1">Puedes escribir o escanear un código existente. Si lo dejas vacío, asignamos uno al guardar.</p></div>
+                                <div><label class="form-label" for="product-name">Nombre</label><input class="form-control" id="product-name" required maxlength="150"></div>
+                            </div>
+                            <div class="category-label"><label class="form-label" for="category">Categoría</label><a href="#category-panel">+ Nueva categoría</a></div>
+                            <select class="form-select" id="category" required><option value="">Selecciona una categoría</option></select>
+                            <label class="form-label" for="description">Descripción (opcional)</label>
+                            <textarea class="form-control" id="description" rows="2" maxlength="4000"></textarea>
+                            <div class="three-columns">
+                                <div><label class="form-label" for="price">Precio (Q, IVA incluido)</label><input class="form-control" id="price" type="number" min="0" max="9999999999.99" step="0.01" required></div>
+                                <div><label class="form-label" for="stock">Existencias</label><input class="form-control" id="stock" type="number" min="0" max="99999999999" step="1" required></div>
+                                <div><label class="form-label" for="minimum">Stock mínimo</label><input class="form-control" id="minimum" type="number" min="0" max="99999999999" step="1" value="0" required></div>
+                            </div>
+                            <label class="form-label" for="product-image">Imagen (opcional, JPG, PNG o WEBP, máximo 2 MB)</label>
+                            <input id="product-image" class="form-control" type="file" accept="image/jpeg,image/png,image/webp">
+                            <p id="image-current" class="hint" hidden>Imagen actual: <img id="current-photo" class="product-photo" alt="Imagen actual del producto"></p>
+                            <div class="actions">
+                                <button id="save-product" class="btn btn-primary" type="submit">Guardar producto</button>
+                                <button id="cancel-edit" type="button" class="btn btn-outline-secondary" hidden>Cancelar edición</button>
+                            </div>
+                        </fieldset>
+                    </form>
+                </section>
+
+            </div>
+
+                <section id="category-panel" class="panel" aria-labelledby="category-title">
+                    <h2 class="h5" id="category-title">Categorías</h2>
+                    <p>Las categorías agrupan los productos.</p>
+                    <form id="category-form">
+                        <label class="form-label" for="category-name">Nombre de la categoría</label>
+                        <input class="form-control" id="category-name" required maxlength="100" placeholder="Ejemplo: Herramientas">
+                        <button class="btn btn-primary" type="submit">Guardar categoría</button>
+                    </form>
+                    <div class="category-list mt-4"><h3 class="h6">Categorías disponibles <span id="category-count" class="count-badge"></span></h3><ul id="category-list" class="category-items"></ul></div>
+                </section>
+
+            <section id="list-panel" class="panel" aria-labelledby="list-title">
+                <div class="section-heading">
+                    <div><h2 class="h5" id="list-title">Productos activos</h2><p id="product-count">Cargando inventario…</p></div>
+                    <a href="#product-panel" class="btn btn-primary" data-admin-only hidden>+ Nuevo producto</a>
+                    <button id="refresh" type="button" class="btn btn-outline-secondary">Actualizar lista</button>
+                </div>
+                <!-- Los filtros se envían al servidor; la tabla solo recibe la página solicitada. -->
+                <form id="filter-form" class="mb-3">
+                    <div class="two-columns">
+                        <div><label class="form-label" for="search-products">Buscar por código o nombre</label><input class="form-control" id="search-products" type="search" maxlength="150" placeholder="Ejemplo: martillo"></div>
+                        <div><label class="form-label" for="filter-category">Filtrar por categoría</label><select class="form-select" id="filter-category"><option value="">Todas las categorías</option></select></div>
+                    </div>
+                    <div class="actions">
+                        <label class="form-check-label"><input id="filter-low" class="form-check-input me-1" type="checkbox"> Solo stock menor que 5</label>
+                        <button class="btn btn-primary" type="submit">Buscar</button>
+                        <button id="clear-filters" class="btn btn-outline-secondary" type="button">Limpiar filtros</button>
+                    </div>
+                </form>
+                <div class="table-container">
+                    <table class="table table-hover align-middle mb-0">
+                        <caption class="visually-hidden">Listado de productos del inventario</caption>
+                        <thead><tr><th scope="col">Imagen</th><th scope="col">Código</th><th scope="col">Producto</th><th scope="col">Categoría</th><th scope="col">Precio</th><th scope="col">Existencias</th><th scope="col">Mínimo</th><th id="actions-heading" scope="col">Acciones</th></tr></thead>
+                        <tbody id="products-body"></tbody>
+                    </table>
+                </div>
+                <div class="actions mt-3" aria-label="Paginación de productos">
+                    <button id="previous-page" class="btn btn-outline-secondary btn-sm" type="button" disabled>Anterior</button>
+                    <span id="page-label" class="small">Página 1 de 1</span>
+                    <button id="next-page" class="btn btn-outline-secondary btn-sm" type="button" disabled>Siguiente</button>
+                </div>
+                <p id="empty-list" class="hint" hidden>No hay productos que coincidan con la búsqueda.</p>
+                <p class="hint">Desactivar retira el producto de esta lista y conserva su registro.</p>
+            </section>
+            <!-- Caja sencilla para ambos roles: busca productos, arma el carrito y registra la venta. -->
+            <section id="sales-panel" class="panel" aria-labelledby="sales-title">
+                <h2 id="sales-title" class="h5">Caja</h2>
+                <form id="sales-search-form">
+                    <label class="form-label" for="sales-search">Buscar producto para vender</label>
+                    <div class="actions"><input id="sales-search" class="form-control" type="search" maxlength="150" placeholder="Código o nombre" required><button type="submit" class="btn btn-primary">Buscar en inventario</button></div>
+                </form>
+                <p id="sales-results-label" class="hint" role="status">Busca un producto para agregarlo al carrito.</p>
+                <div class="table-container"><table class="table align-middle">
+                    <caption class="visually-hidden">Productos encontrados para vender</caption>
+                    <thead><tr><th>Código</th><th>Producto</th><th>Precio</th><th>Disponibles</th><th>Acción</th></tr></thead>
+                    <tbody id="sales-results"></tbody>
+                </table></div>
+                <h3 class="h6 mt-4">Carrito</h3>
+                <form id="checkout-form">
+                    <!-- Los datos se guardan con la venta, no se agregan después de descontar el stock. -->
+                    <fieldset id="buyer-fields" class="buyer-fields">
+                        <legend class="h6">Datos de facturación</legend>
+                        <label for="buyer-type" class="form-label">Tipo de comprador</label>
+                        <select id="buyer-type" class="form-select"><option value="cf">Consumidor final (CF)</option><option value="nit">Factura con NIT</option></select>
+                        <p id="buyer-help" class="hint">Puedes usar CF en compras menores a Q 2,500.00.</p>
+                        <div id="buyer-details" hidden>
+                            <div class="two-columns"><div><label for="buyer-nit" class="form-label">NIT del comprador</label><input id="buyer-nit" class="form-control" maxlength="20" autocomplete="off"></div><div><label for="buyer-name" class="form-label">Nombre del comprador</label><input id="buyer-name" class="form-control" maxlength="150" autocomplete="name"></div></div>
+                            <label for="buyer-address" class="form-label">Dirección del comprador</label><input id="buyer-address" class="form-control" maxlength="255" autocomplete="street-address">
+                        </div>
+                    </fieldset>
+                    <div class="table-container"><table class="table align-middle">
+                        <caption class="visually-hidden">Productos del carrito</caption>
+                        <thead><tr><th>Producto</th><th>Precio</th><th>Cantidad</th><th>Subtotal</th><th>Acción</th></tr></thead>
+                        <tbody id="cart-body"></tbody>
+                    </table></div>
+                    <p id="cart-empty" class="hint">El carrito está vacío.</p>
+                    <p class="mb-1">Subtotal sin IVA: <span id="cart-base">Q 0.00</span></p>
+                    <p class="mb-1">IVA incluido (12 %): <span id="cart-tax">Q 0.00</span></p>
+                    <p class="fw-bold fs-5">Total: <span id="cart-total">Q 0.00</span></p>
+                    <p class="hint">Los precios en quetzales incluyen IVA del 12 %. Al registrar, se confirma el precio y el stock vigentes.</p>
+                    <p id="checkout-pending" class="alert alert-warning" hidden>Hay una venta por confirmar. Reintenta sin cambiar el carrito para evitar duplicarla.</p>
+                    <div class="actions"><button id="save-sale" class="btn btn-primary" type="submit" disabled>Registrar venta</button><button id="clear-cart" class="btn btn-outline-secondary" type="button" disabled>Vaciar carrito</button></div>
+                </form>
+                <p id="sale-result" class="alert alert-success mt-3" role="status" hidden></p>
+                <div id="cash-invoice-slot">
+                <!-- Se llena con la respuesta del servidor, usando siempre texto seguro. -->
+                <article id="invoice-panel" class="panel invoice-sheet mt-4" aria-labelledby="invoice-title" hidden>
+                    <div class="section-heading"><div><h3 id="invoice-title" class="h5">Factura</h3><p>FerreSync · Proyecto universitario</p></div></div>
+                    <p id="invoice-info"></p>
+                    <p id="invoice-buyer"></p>
+                    <p class="hint">Precios en quetzales con IVA del 12 % incluido.</p>
+                    <div class="table-container"><table class="table align-middle">
+                        <caption class="visually-hidden">Detalle de la factura</caption>
+                        <thead><tr><th scope="col">Código</th><th scope="col">Producto</th><th scope="col">Cantidad</th><th scope="col">Precio</th><th scope="col">Importe</th></tr></thead>
+                        <tbody id="invoice-body"></tbody>
+                    </table></div>
+                    <div class="invoice-summary">
+                    <!-- La imagen se obtiene con JWT; el navegador nunca llama directamente al proveedor. -->
+                    <figure class="invoice-qr">
+                        <img id="invoice-qr-image" width="160" height="160" alt="Código QR de referencia de la factura" hidden>
+                        <figcaption><strong>Referencia de factura</strong><p id="invoice-qr-status" class="hint" role="status"></p></figcaption>
+                        <button id="retry-invoice-qr" class="btn btn-outline-secondary btn-sm" type="button" hidden>Reintentar QR</button>
+                    </figure>
+                    <div class="invoice-totals">
+                        <p>Subtotal sin IVA: <strong id="invoice-base"></strong></p>
+                        <p>IVA incluido (12 %): <strong id="invoice-tax"></strong></p>
+                        <p class="fs-5">Total: <strong id="invoice-total"></strong></p>
+                    </div>
+                    </div>
+                    <p class="hint">Comprobante académico del proyecto.</p>
+                    <div class="actions"><button id="print-invoice" class="btn btn-outline-secondary" type="button">Imprimir factura</button><button id="new-sale" class="btn btn-primary" type="button">Nueva venta</button></div>
+                </article>
+                </div>
+            </section>
+            <!-- El historial permite recuperar comprobantes sin ocupar la pantalla de Caja. -->
+            <section id="sales-history-panel" hidden aria-label="Historial de ventas">
+                <div class="panel">
+                    <h2 class="h5">Historial de ventas</h2><p class="hint">Consulta ventas y sus estados, y vuelve a descargar sus facturas. El cajero ve únicamente sus ventas.</p>
+                    <form id="history-filters" class="history-filters">
+                        <div><label for="history-from">Desde</label><input id="history-from" class="form-control" type="date" min="2000-01-01" max="2100-12-31" required></div>
+                        <div><label for="history-to">Hasta</label><input id="history-to" class="form-control" type="date" min="2000-01-01" max="2100-12-31" required></div>
+                        <div><label for="history-seller">Vendedor</label><select id="history-seller" class="form-select"><option value="">Todos los vendedores</option></select></div>
+                        <button id="history-filter-button" class="btn btn-primary" type="submit">Filtrar ventas</button>
+                    </form>
+                    <p id="history-status" role="status" aria-live="polite" class="mt-3"></p>
+                    <div id="history-results" hidden>
+                        <p id="history-summary" class="hint"></p>
+                        <div class="table-container"><table class="table table-hover align-middle"><caption class="visually-hidden">Ventas registradas</caption><thead><tr><th>Factura</th><th>Fecha y hora</th><th>Vendedor</th><th>Comprador</th><th>Total</th><th>Estado</th><th>Acción</th></tr></thead><tbody id="history-body"></tbody></table></div>
+                        <div class="actions mt-3"><button id="history-prev" class="btn btn-outline-secondary" type="button">Anterior</button><span id="history-page" aria-live="polite"></span><button id="history-next" class="btn btn-outline-secondary" type="button">Siguiente</button></div>
+                    </div>
+                <!-- Consulta protegida: el cajero ve sus ventas y el administrador puede consultar cualquiera. -->
+                <form id="invoice-form" class="mt-4">
+                    <label class="form-label" for="invoice-sale-id">Número de venta para consultar factura</label>
+                    <div class="actions"><input id="invoice-sale-id" class="form-control" type="number" min="1" step="1" required><button class="btn btn-outline-primary" type="submit">Ver factura</button></div>
+                </form>
+                </div>
+                <div id="history-invoice-slot"></div>
+            </section>
+            <!-- Gestión mínima de cuentas: visible solo para el administrador. -->
+            <!-- Reportes usa su propio módulo JavaScript y las mismas tarjetas del sistema. -->
+            <section id="reports-panel" hidden aria-label="Reportes de ventas">
+<div class="panel mb-3"><h2 class="h5">Clima del día</h2><p data-weather role="status">Consultando clima…</p></div>
+                <form id="report-filters" class="panel report-filters">
+                    <div><p class="eyebrow">RESULTADOS DE TU FERRETERÍA</p><h2 class="h5">Reportes de ventas</h2><p class="hint mb-0">Elige hasta 366 días. Todos los importes incluyen IVA.</p></div>
+                    <div><label for="report-from">Desde</label><input id="report-from" type="date" class="form-control" min="2000-01-01" max="2100-12-31" required></div>
+                    <div><label for="report-to">Hasta</label><input id="report-to" type="date" class="form-control" min="2000-01-01" max="2100-12-31" required></div>
+                    <div><label for="report-group">Agrupar por</label><select id="report-group" class="form-select"><option value="dia">Día</option><option value="semana">Semana</option><option value="mes" selected>Mes</option></select></div>
+                    <button id="report-filter-button" class="btn btn-primary" type="submit"><i class="bi bi-funnel" aria-hidden="true"></i> Aplicar filtros</button>
+                </form>
+                <div class="report-export-actions"><p class="hint mb-0">El PDF incluye todas las ventas del período aplicado.</p><button id="report-export" type="button" class="btn btn-outline-secondary" disabled><i class="bi bi-file-earmark-pdf" aria-hidden="true"></i> Exportar PDF</button></div>
+                <p id="report-status" role="status" aria-live="polite"></p>
+                <div id="report-results" hidden>
+                    <p id="report-period" class="hint"></p>
+                    <p id="report-empty" class="alert alert-info" hidden>No hay ventas registradas en este período. Prueba otras fechas.</p>
+                    <div class="dashboard-stats report-stats">
+                        <div class="stat-card"><span class="stat-icon teal"><i class="bi bi-cash-stack" aria-hidden="true"></i></span><div><span>Total vendido</span><strong id="report-total">—</strong><small>Ingresos por ventas</small></div></div>
+                        <div class="stat-card"><span class="stat-icon blue"><i class="bi bi-receipt" aria-hidden="true"></i></span><div><span>Ventas realizadas</span><strong id="report-count">—</strong><small>Ventas confirmadas</small></div></div>
+                        <div class="stat-card"><span class="stat-icon amber"><i class="bi bi-basket" aria-hidden="true"></i></span><div><span>Promedio por venta</span><strong id="report-average">—</strong><small>Total dividido entre ventas</small></div></div>
+                        <div class="stat-card"><span class="stat-icon teal"><i class="bi bi-box-seam" aria-hidden="true"></i></span><div><span>Unidades vendidas</span><strong id="report-units">—</strong><small>Productos que salieron</small></div></div>
+                    </div>
+                    <div class="panel"><div class="report-heading"><div><p class="eyebrow">EVOLUCIÓN</p><h2 class="h5" id="report-chart-title">Ventas por mes</h2></div><span class="hint">Total en Q · Semanas desde el lunes</span></div><div class="report-chart-container"><canvas id="report-chart" role="img" aria-label="Gráfica de ventas"></canvas></div><details class="mt-3"><summary>Ver datos de la gráfica</summary><div class="table-container report-series-scroll"><table class="table"><caption class="visually-hidden">Datos de la gráfica de ventas</caption><thead><tr><th>Período</th><th>Ventas</th><th>Total</th></tr></thead><tbody id="report-series"></tbody></table></div></details></div>
+                    <div class="report-grid">
+                        <div class="panel"><p class="eyebrow">LO QUE MÁS SE MUEVE</p><h2 class="h5">Categorías más vendidas</h2><p class="hint">Las primeras 8 por unidades vendidas.</p><div id="report-categories"></div><p class="hint mt-3 mb-0">Las ventas anteriores al módulo no guardaban categoría.</p></div>
+                        <div class="panel"><p class="eyebrow">LOS FAVORITOS</p><h2 class="h5">Productos más vendidos</h2><p class="hint">Los primeros 8 por unidades vendidas.</p><div class="table-container"><table class="table table-hover"><caption class="visually-hidden">Productos más vendidos</caption><thead><tr><th>Código</th><th>Producto</th><th>Unidades</th><th>Importe</th></tr></thead><tbody id="report-products"></tbody></table></div></div>
+                    </div>
+                    <div class="panel"><div class="report-heading"><div><p class="eyebrow">DETALLE DEL PERÍODO</p><h2 class="h5">Ventas registradas</h2></div><span class="hint">25 ventas por página</span></div><div class="table-container"><table class="table table-hover"><caption class="visually-hidden">Ventas del período</caption><thead><tr><th>Factura</th><th>Fecha y hora</th><th>Comprador</th><th>Total</th></tr></thead><tbody id="report-sales"></tbody></table></div><div class="actions mt-3"><button type="button" id="report-prev" class="btn btn-outline-secondary">Anterior</button><span id="report-page" aria-live="polite"></span><button type="button" id="report-next" class="btn btn-outline-secondary">Siguiente</button></div></div>
+                </div>
+            </section>
+            <section id="users-panel" class="panel" aria-labelledby="users-title" data-admin-only hidden>
+                <div class="section-heading">
+                    <div><h2 class="h5" id="users-title">Usuarios</h2><p>Registra administradores o cajeros y consulta las cuentas del sistema.</p></div>
+                    <button id="refresh-users" class="btn btn-outline-secondary" type="button">Actualizar usuarios</button>
+                </div>
+                <form id="user-form">
+                    <div class="two-columns">
+                        <div><label class="form-label" for="user-name">Nombre del usuario</label><input class="form-control" id="user-name" required maxlength="150" autocomplete="off"></div>
+                        <div><label class="form-label" for="user-email">Correo del usuario</label><input class="form-control" id="user-email" type="email" required maxlength="254" autocomplete="off"></div>
+                        <div><label class="form-label" for="user-password">Contraseña del usuario</label><input class="form-control" id="user-password" type="password" required minlength="12" maxlength="72" autocomplete="new-password"></div>
+                        <div><label class="form-label" for="user-role">Rol del usuario</label><select class="form-select" id="user-role"><option value="cajero">Cajero</option><option value="administrador">Administrador</option></select></div>
+                    </div>
+                    <button class="btn btn-primary" type="submit">Registrar usuario</button>
+                    <p class="hint">Los permisos de cada rol son fijos. Puedes cambiar el rol y estado de otras cuentas desde la tabla. La contraseña debe tener entre 12 y 72 bytes. Se guarda como hash y no se muestra en la lista.</p>
+                </form>
+                <div class="table-container">
+                    <table class="table table-hover align-middle mb-0">
+                        <caption class="visually-hidden">Usuarios del sistema</caption>
+                        <thead><tr><th scope="col">Nombre</th><th scope="col">Correo</th><th scope="col">Rol</th><th scope="col">Estado</th><th scope="col">Acceso</th></tr></thead>
+                        <tbody id="users-body"></tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+                </div>
+            </main>
+            <!-- Se mantienen la autoría de la plantilla y los enlaces de comprobación. -->
+            <footer class="admin-footer">
+                <div class="container-fluid px-3 px-lg-4 flex-wrap">
+                    <span class="small">Plantilla adminHMD © 2026 · <a href="https://github.com/HasanMahmudDev" target="_blank" rel="noopener">Md. Hasan Mahmud</a> · <a href="https://themewagon.com" target="_blank" rel="noopener">ThemeWagon</a></span>
+                    <div class="service-links small"><span>Servicios:</span> <a href="/api/auth/health" target="_blank" rel="noopener">Auth</a> <a href="/api/inventario/health" target="_blank" rel="noopener">Inventario</a> <a href="/api/ventas/health" target="_blank" rel="noopener">Ventas</a> <a href="/api/reportes/health" target="_blank" rel="noopener">Reportes</a></div>
+                </div>
+            </footer>
+        </div>
+    </div>
+<!-- Formulario administrativo; el servidor también comprueba el rol. -->
+<dialog id="sale-change-dialog" class="panel" style="width:min(620px,94vw);border:1px solid #bccdc9;border-radius:14px">
+    <form id="sale-change-form">
+        <h2 id="sale-change-title" class="h5">Corregir comprador</h2>
+        <p class="hint">Los productos, importes y vendedor originales se conservan.</p>
+        <div id="sale-buyer-fields">
+            <label class="form-label" for="sale-edit-name">Nombre o CF</label><input id="sale-edit-name" class="form-control mb-3" maxlength="150">
+            <label class="form-label" for="sale-edit-nit">NIT</label><input id="sale-edit-nit" class="form-control mb-3" maxlength="20">
+            <label class="form-label" for="sale-edit-address">Dirección</label><input id="sale-edit-address" class="form-control mb-3" maxlength="255">
+        </div>
+        <label class="form-label" for="sale-edit-reason">Motivo del cambio</label><textarea id="sale-edit-reason" class="form-control mb-3" required minlength="5" maxlength="255"></textarea>
+        <p id="sale-change-error" role="status" class="text-danger"></p>
+        <div class="actions"><button type="button" id="sale-change-close" class="btn btn-outline-secondary">Cancelar</button><button id="sale-change-save" class="btn btn-primary" type="submit">Guardar</button></div>
+    </form>
+</dialog>
+</body>
+</html>
+
+

@@ -1,0 +1,4 @@
+{
+  "require": { "php": "^8.3", "ext-openssl": "*", "firebase/php-jwt": "^6.11 || ^7.0" },
+  "config": { "sort-packages": true, "allow-plugins": false }
+}

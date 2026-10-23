@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <title>FerreSync</title>
+  <!-- Marca simple: tuerca y una F, con los colores de la ferretería. -->
+  <path d="M24 2 43 13v22L24 46 5 35V13Z" fill="#F0AE42"/>
+  <path d="m24 8 14 8v16l-14 8-14-8V16Z" fill="#153B42"/>
+  <path d="M17 15h17v5H22v5h9v5h-9v7l-5-3Z" fill="#FFF8E9"/>
+</svg>

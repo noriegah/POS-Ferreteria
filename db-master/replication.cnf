@@ -1,0 +1,7 @@
+[mariadb]
+# Primaria: registra los cambios de Ventas para enviarlos a la réplica.
+server_id=1
+log_bin=ferresync-bin
+binlog_format=ROW
+binlog_do_db=ventas_db
+expire_logs_days=7
