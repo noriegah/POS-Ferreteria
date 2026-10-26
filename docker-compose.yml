@@ -71,6 +71,7 @@ services:
   ventas-service:
     build: ./services/ventas-service
     environment:
+      PUBLIC_APP_URL: ${PUBLIC_APP_URL:-http://localhost:8080}
       DB_HOST: db-primary
       DB_NAME: ventas_db
       PAYPAL_CLIENT_ID: ${PAYPAL_CLIENT_ID:-}
@@ -110,11 +111,12 @@ services:
     environment:
       DB_HOST: db-primary
       DB_NAME: reportes_db
+      AUTH_URL: http://auth-service:8083
       VENTAS_URL: http://gateway/api/ventas
       INVENTARIO_URL: http://inventario-service:8081
       OPENWEATHER_API_KEY: ${OPENWEATHER_API_KEY:-}
-      WEATHER_LAT: ${WEATHER_LAT:-14.6349}
-      WEATHER_LON: ${WEATHER_LON:--90.5069}
+      WEATHER_LAT: ${WEATHER_LAT:-15.02681}
+      WEATHER_LON: ${WEATHER_LON:--90.87815}
     expose: ["8084"]
     depends_on:
       db-primary:

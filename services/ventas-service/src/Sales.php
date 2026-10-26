@@ -71,6 +71,7 @@ final class Sales
                 throw new HttpError(409, 'La referencia ya corresponde a otra compra');
             }
             if ($sale['total'] === null) {
+                $cash=$method==='efectivo' ? (new CashRegister($this->db))->active($claims->sub) : null;
                 // Si se corta la respuesta entre servicios, la misma referencia recupera el descuento ya hecho.
                 $confirmed = InventoryClient::discount($reference, $items, $buyer['nit']!==null,$minimum);
                 Buyer::requireForTotal($buyer, $confirmed['total']);
@@ -87,6 +88,7 @@ final class Sales
                 $q->execute([$id,$method,$method==='tarjeta' ? 'paypal_sandbox' : 'caja',$confirmed['total'],'GTQ',
                     $method==='tarjeta' ? 'pendiente' : 'aprobado',$method==='tarjeta' ? PayPalClient::dollars($confirmed['total'],$rate) : null,
                     $method==='tarjeta' ? 'USD' : null,$rate]);
+                if($cash!==null) (new CashRegister($this->db))->movement((int)$cash['id'],$id,'venta',$confirmed['total']);
             }
             $result = $this->find($id, $claims);
             $this->db->commit(); return $result;

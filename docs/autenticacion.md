@@ -83,3 +83,7 @@ docker compose exec -T auth-service php /tmp/jwt-integration.php
 La prueba crea tres usuarios temporales con contraseñas aleatorias, utiliza HTTP a través de Nginx y los elimina en `finally`. No imprime tokens ni contraseñas. Comprueba login, perfil, permisos, guard de rol 403, usuarios inactivos, errores de entrada, firma alterada, expiración, fechas futuras, emisor, audiencia, claims requeridos y algoritmo incorrecto, además de los seis endpoints de infraestructura. El 403 se comprueba sobre el guard de roles; las rutas de escritura de inventario se prueban por separado en el bloque 3. Pueden quedar saltos en los identificadores de usuario.
 
 Validación local del 20 de octubre de 2026: pruebas JWT y sintaxis PHP/Nginx aprobadas. Las cuentas de prueba se eliminaron. El volumen de MariaDB, las redes y los servicios de Ventas y Reportes se conservaron.
+
+## Sesión por inactividad
+
+La interfaz cierra la sesión tras 15 minutos sin clics, escritura o desplazamiento. Cada interacción real reinicia ese plazo. Las consultas de fondo y la renovación del JWT no cuentan como actividad. Un reloj comprueba también el tiempo transcurrido al volver a una pestaña suspendida. El JWT se renueva antes de vencer mediante POST /api/auth/refresh, que exige un token vigente y vuelve a verificar el estado, rol y versión de sesión en la base de datos. No permite renovar tokens vencidos ni cuentas desactivadas o contraseñas restablecidas. Al recargar se conserva el comportamiento de solicitar acceso porque los tokens permanecen solo en memoria.

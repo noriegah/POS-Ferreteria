@@ -2,7 +2,7 @@
 declare(strict_types=1);
 // Carga las clases propias de Ventas y la biblioteca JWT ya usada por los otros servicios.
 require_once __DIR__ . '/../vendor/autoload.php';
-foreach (['Database','TokenService','AuthClient','Checkout','InventoryClient','Buyer','Sales','InvoicePdf','SalesReports','SalesHistory','SaleChanges','Customers','Payments'] as $class) {
+foreach (['Database','TokenService','AuthClient','Checkout','InventoryClient','Buyer','Sales','InvoicePdf','SalesReports','SalesHistory','SaleChanges','Customers','Payments','CashRegister','InvoiceValidation'] as $class) {
     require_once __DIR__ . '/../src/' . $class . '.php';
 }
 require_once __DIR__ . '/../src/integrations/QrCodeClient.php';
@@ -23,20 +23,41 @@ function methods(array $allowed): void {
     }
 }
 try {
+    // Consulta pública limitada a una referencia con firma válida, sin JWT ni datos personales.
+    if($path==='/facturas/validar') {
+        methods(['GET']);
+        $reference=$_GET['referencia'] ?? null;$signature=$_GET['firma'] ?? null;
+        if(!InvoiceValidation::authorized($reference,$signature)) throw new HttpError(404,'El enlace de validación no es válido');
+        respond(200,['factura'=>InvoiceValidation::lookup(Database::connect(),$reference)]);
+    }
     // Conserva la comprobación de salud existente y añade la de conexión propia.
     if ($path === '/health' && $method === 'GET') { respond(200, ['service'=>'ventas-service', 'status'=>'ok', 'phase'=>1, 'instancia'=>gethostname()]); }
     if ($path === '/ready' && $method === 'GET') {
         Database::connect()->query('SELECT 1'); respond(200, ['service'=>'ventas-service','status'=>'ok','database'=>'ok']);
+    }
+    // Apertura y cierre propios; el administrador también consulta el historial de todos.
+    if($path==='/cajas' || preg_match('#^/cajas/([0-9]+)(/cerrar)?$#D',$path,$cashMatch)) {
+        $claims=AuthClient::current(); TokenService::requireRole($claims,['administrador','cajero']);
+        $cash=new CashRegister(Database::connect());
+        if($path==='/cajas') {
+            methods(['GET','POST']);
+            if($method==='GET') respond(200,$cash->listing($claims));
+            respond(201,['caja'=>$cash->open(Checkout::body(),$claims)]);
+        }
+        $id=Checkout::id($cashMatch[1]);
+        if(!empty($cashMatch[2])) {methods(['POST']);respond(200,['caja'=>$cash->close($id,Checkout::body(),$claims)]);}
+        methods(['GET']);respond(200,['caja'=>$cash->detail($id,$claims)]);
     }
     // El navegador solo conoce si Sandbox está configurado; nunca recibe las credenciales.
     if($path==='/pagos/config') {
         AuthClient::current(); methods(['GET']);
         respond(200,['paypal_disponible'=>PayPalClient::ready(),'tasa_demo'=>PayPalClient::rate(),'moneda'=>'USD']);
     }
-    if(preg_match('#^/([0-9]+)/pago/(orden|confirmar)$#D',$path,$payment)) {
+    if(preg_match('#^/([0-9]+)/pago/(orden|confirmar|cancelar)$#D',$path,$payment)) {
         $claims=AuthClient::current(); methods(['POST']);
         $service=new Payments(Database::connect()); $id=Checkout::id($payment[1]);
         if($payment[2]==='orden') respond(200,['pago'=>$service->order($id,$claims)]);
+        if($payment[2]==='cancelar') respond(200,['venta'=>$service->cancelPending($id,$claims)]);
         respond(200,['venta'=>$service->capture($id,$claims)]);
     }
     // Solo el administrador obtiene estadísticas; nunca se comparten datos del comprador en los gráficos.

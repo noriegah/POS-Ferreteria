@@ -3,7 +3,7 @@
 // Reúne filtros, tarjetas, Chart.js y la descarga autenticada del reporte PDF.
 const ReportView = (() => {
     const el = (id) => document.getElementById(id);
-    let api, money, units, getToken, onUnauthorized, chart = null, page = 1, request = 0;
+    let api, money, units, getToken, getSession, ensureSession, onUnauthorized, chart = null, page = 1, request = 0;
     let applied = null;
     function text(tag, value, className = '') {
         const node = document.createElement(tag); node.textContent = value; node.className = className; return node;
@@ -119,20 +119,22 @@ const ReportView = (() => {
         if (applied.desde!==el('report-from').value || applied.hasta!==el('report-to').value || applied.agrupacion!==el('report-group').value) {
             el('report-status').textContent = 'Aplica los filtros antes de exportar.'; return;
         }
-        const ticket = request; const session = getToken(); const filters = {...applied};
+        const ticket = request; const session = getSession(); const filters = {...applied};
         el('report-export').disabled = true; el('report-status').textContent = 'Generando PDF del período completo…';
         try {
+            await ensureSession();
+            if(session!==getSession()) return;
             const response = await fetch(`/api/reportes/pdf?${new URLSearchParams(filters)}`,{
-                headers:{Authorization:`Bearer ${session}`,Accept:'application/pdf'},cache:'no-store'
+                headers:{Authorization:`Bearer ${getToken()}`,Accept:'application/pdf'},cache:'no-store'
             });
-            if (response.status===401 && getToken()===session) { onUnauthorized(); return; }
+            if (response.status===401 && getSession()===session) { onUnauthorized(); return; }
             if (!response.ok) {
                 const body = await response.json().catch(()=>({}));
                 throw new Error(body.error || 'No se pudo generar el PDF. Intenta de nuevo.');
             }
             if (!response.headers.get('Content-Type')?.startsWith('application/pdf')) throw new Error('El servidor no devolvió un PDF válido.');
             const blob = await response.blob();
-            if (ticket!==request || getToken()!==session) return;
+            if (ticket!==request || getSession()!==session) return;
             const url = URL.createObjectURL(blob); const link = document.createElement('a');
             link.href = url; link.download = `reporte-ventas-${filters.desde}-${filters.hasta}.pdf`;
             document.body.append(link); link.click(); link.remove(); setTimeout(()=>URL.revokeObjectURL(url),30000);
@@ -144,7 +146,7 @@ const ReportView = (() => {
         }
     }
     function init(options) {
-        ({api,money,units,getToken,onUnauthorized} = options);
+        ({api,money,units,getToken,getSession,ensureSession,onUnauthorized} = options);
         const year = new Intl.DateTimeFormat('en-US',{year:'numeric',timeZone:'America/Guatemala'}).format(new Date());
         el('report-from').value = `${year}-01-01`; el('report-to').value = `${year}-12-31`;
         el('report-filters').addEventListener('submit',event => { event.preventDefault(); load(true); });

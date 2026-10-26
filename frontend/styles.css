@@ -206,3 +206,17 @@ button:focus-visible, a:focus-visible { outline: 3px solid #d97706; outline-offs
 #sales-history-panel td:first-child, #sales-history-panel td:nth-child(5) { white-space:nowrap; }
 .invoice-sheet { scroll-margin-top:90px; }
 @media(max-width:575px) { .history-filters > div { flex-basis:100%; } }
+
+/* Un único cuadro compacto en el dashboard. */
+.weather-card { max-width: 420px; padding: 1rem; }
+.weather-card [data-weather-outlook] { font-weight: 600; }
+
+/* Factura: azul y gris, independiente de los colores del panel. */
+.invoice-sheet {border:1px solid #c5cfd8;border-top:4px solid #11628c;border-radius:4px;background:#fff;color:#263545;}
+.invoice-sheet .section-heading {border-bottom:1px solid #c5cfd8;padding-bottom:14px;}
+.invoice-sheet h3 {color:#11628c;font-weight:700;}
+.invoice-sheet .section-heading p {font-size:.85rem;line-height:1.7;color:#5d6c7b;}
+.invoice-sheet table thead th {background:#eaf0f5;color:#24516f;border:1px solid #c5cfd8;}
+.invoice-sheet table td {border-bottom:1px solid #d4dce3;}
+.invoice-sheet .invoice-totals {min-width:240px;padding:16px;background:#f2f5f8;border:1px solid #d4dce3;}
+.invoice-sheet .invoice-totals .fs-5 {color:#11628c;border-top:1px solid #bfcbd6;padding-top:12px;}

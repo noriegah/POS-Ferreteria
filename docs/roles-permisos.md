@@ -37,3 +37,7 @@ Validación: scripts/test-sale-changes.ps1. Incluye 42 comprobaciones de permiso
 ## Pagos externos
 
 El cajero puede preparar y confirmar el pago de sus ventas; el administrador también puede consultar y completar pagos. Solo el administrador anula reservas o reembolsa pagos al anular. Una venta pendiente no se edita ni emite factura. La devolución de existencias ocurre después de confirmar el reembolso Sandbox, si hubo cobro.
+
+## Efectivo
+
+Cajero y administrador pueden abrir/cerrar su propio turno y consultar sus movimientos. Solo el administrador consulta turnos de todos los usuarios. No puede cerrar ni modificar un cuadre ajeno. Anular sigue siendo exclusivo del administrador; para devolver efectivo necesita un turno propio abierto. PayPal no afecta el cuadre.

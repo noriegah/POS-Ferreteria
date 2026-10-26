@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+require_once __DIR__.'/../InvoiceValidation.php';
 
 // Integración externa de Ventas. Guarda los PNG para no pedir el mismo QR cada vez.
 final class QrCodeClient
@@ -12,7 +13,7 @@ final class QrCodeClient
     // Solo se comparte la referencia del comprobante; nunca se envía el JWT ni datos personales.
     public static function content(array $invoice): string
     {
-        return "FerreSync\nFactura: " . $invoice['numero'] . "\nReferencia: " . $invoice['referencia'];
+        return InvoiceValidation::url($invoice['referencia']);
     }
 
     public function image(array $invoice): string

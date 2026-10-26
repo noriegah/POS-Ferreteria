@@ -36,6 +36,9 @@ final class SaleChanges
         try {
             $sale=$this->lock($id);
             if(in_array($sale['estado'],['confirmada','pendiente_pago'],true)) {
+                // La devolución sale de la caja abierta del administrador que la autoriza.
+                $refundCash=$sale['metodo_pago']==='efectivo' ? (new CashRegister($this->db))->active($claims->sub) : null;
+                $q=$this->db->prepare('UPDATE ventas SET caja_devolucion_id=? WHERE id=?');$q->execute([$refundCash['id'] ?? null,$id]);
                 $q=$this->db->prepare("UPDATE ventas SET estado='anulando',anulacion_motivo=?,anulacion_usuario_id=? WHERE id=?");
                 $q->execute([$reason,$claims->sub,$id]);
                 $this->event($sale,$claims->sub,'solicitar_anulacion',$reason,['estado'=>'anulando']);
@@ -50,6 +53,11 @@ final class SaleChanges
             try {
                 $saved=$this->lock($id);
                 if($saved['estado']==='anulando') {
+                    if($saved['metodo_pago']==='efectivo') {
+                        $q=$this->db->prepare("SELECT id FROM cajas WHERE id=? AND estado='abierta' FOR UPDATE");$q->execute([$saved['caja_devolucion_id']]);
+                        if(!$q->fetch()) throw new HttpError(409,'La caja de devolución debe estar abierta');
+                        (new CashRegister($this->db))->movement((int)$saved['caja_devolucion_id'],$id,'devolucion',$saved['total']);
+                    }
                     $q=$this->db->prepare("UPDATE ventas SET estado='anulada',anulada_en=UTC_TIMESTAMP() WHERE id=?"); $q->execute([$id]);
                     $q=$this->db->prepare("UPDATE pagos SET estado='anulado' WHERE venta_id=? AND metodo='efectivo'"); $q->execute([$id]);
                     $this->event($saved,$claims->sub,'anular',$saved['anulacion_motivo'],['estado'=>'anulada']);

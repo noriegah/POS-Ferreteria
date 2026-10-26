@@ -1,4 +1,2 @@
 <?php
-// Completar aquí los datos reales de la ferretería para la presentación del comprobante.
-// No se inventan NIT de emisor ni números de certificación FEL.
-return ['nombre'=>'FerreSync', 'direccion'=>'', 'nit'=>''];
+return ['nombre'=>'Servicios Hanona S. A.', 'direccion'=>'1ra Calle 6-35, Zona 1, Zacualpa, Quiché', 'nit'=>'2345674'];

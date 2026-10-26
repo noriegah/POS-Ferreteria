@@ -32,6 +32,12 @@ $denied=false;
 try {$replica->query('SELECT COUNT(*) FROM mysql.user');}
 catch(PDOException $e) {$denied=(int)($e->errorInfo[1] ?? 0)===1142;}
 check($denied,'La cuenta de reportes no consulta cuentas SQL');
+
+// El efectivo exige ahora un turno abierto para cada cuenta temporal.
+foreach(['admin','cashier','other'] as $key) {
+    [$cashCode]=api('ventas/cajas','POST',$tokens[$key],['fondo'=>'500.00']);
+    if($cashCode!==201) throw new RuntimeException('No se pudo abrir el turno temporal');
+}
 $tag='repl_'.$tokens['tag'];
 [$code,$data]=api('inventario/categorias','POST',$tokens['admin'],['nombre'=>$tag]);
 check($code===201,'Categoría temporal creada por API'); $category=$data['categoria']['id'];

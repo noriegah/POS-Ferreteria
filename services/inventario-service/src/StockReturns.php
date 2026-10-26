@@ -4,16 +4,17 @@ declare(strict_types=1);
 // Devuelve las cantidades del descuento original; nunca acepta cantidades del navegador.
 final class StockReturns
 {
-    public static function restore(PDO $db, object $data, string $administrator): array
+    public static function restore(PDO $db, object $data, string $administrator,bool $ownOnly=false): array
     {
         $reference=$data->referencia ?? null;
         if(!is_string($reference) || !preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iD',$reference)) throw new HttpError(422,'Referencia inválida');
         $db->beginTransaction();
         try {
             // Bloquear el descuento hace que dos solicitudes no repongan el mismo stock.
-            $q=$db->prepare('SELECT respuesta FROM descuentos_venta WHERE referencia=? FOR UPDATE');
+            $q=$db->prepare('SELECT respuesta,usuario_id FROM descuentos_venta WHERE referencia=? FOR UPDATE');
             $q->execute([$reference]); $original=$q->fetch();
             if(!$original || $original['respuesta']===null) throw new HttpError(409,'No existe un descuento confirmado');
+            if($ownOnly && (string)$original['usuario_id']!==$administrator) throw new HttpError(403,'Solo puedes liberar la reserva de tu propia venta');
             $q=$db->prepare('SELECT respuesta FROM devoluciones_venta WHERE referencia=?');
             $q->execute([$reference]); $saved=$q->fetchColumn();
             if($saved!==false) { $db->commit(); return json_decode($saved,true,32,JSON_THROW_ON_ERROR); }

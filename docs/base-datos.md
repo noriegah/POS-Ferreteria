@@ -33,3 +33,7 @@ Reportes solicita estadísticas por REST a Ventas. Ventas consulta su propia ven
 Las migraciones se aplican en orden con scripts/migrate.ps1 y generan respaldo antes de tocar el esquema. db-master/demo.sql contiene productos opcionales de demostración y no se aplica automáticamente sobre los datos del usuario.
 
 La venta pendiente_pago conserva los precios y aparta stock, pero no emite factura ni suma en reportes. La migración 010 amplía estados y guarda los identificadores del proveedor sin almacenar tarjetas. Si el administrador anula un cobro Sandbox, primero se confirma el reembolso y después vuelve el stock.
+
+## Turnos de efectivo
+
+`cajas` registra fondo, propietario, fechas y cierre definitivo. Un índice único de columna generada permite un solo turno abierto por usuario. `caja_movimientos` relaciona turno y venta mediante claves foráneas; su índice único evita duplicar ingreso/devolución de una factura. `ventas.caja_devolucion_id` referencia el turno del administrador que entregará la devolución y permite impedir el cierre durante una anulación pendiente. Las ventas anteriores conservan sus datos sin crear movimientos retroactivos. Ver [cuadre](cuadre-caja.md).

@@ -2,6 +2,7 @@
 
 // El token vive solo en memoria: no guardamos contraseñas ni JWT en localStorage.
 let token = "";
+let sessionEpoch = 0;
 let user = null;
 let editingId = null;
 let page = 1;
@@ -21,8 +22,22 @@ function message(text, error = false) {
     $("message").hidden = !text;
 }
 
+SessionActivity.init({
+    renew:async()=>{
+        const response=await fetch('/api/auth/refresh',{method:'POST',headers:{Authorization:`Bearer ${token}`,Accept:'application/json'},cache:'no-store'});
+        const data=await response.json().catch(()=>({}));
+        if(!response.ok){const error=new Error(data.error || 'No se pudo renovar la sesión');error.status=response.status;throw error;}
+        return data;
+    },
+    apply:value=>{token=value;},
+    onExpire:reason=>{logout();message(reason,true);}
+});
+
 // Todas las peticiones utilizan las rutas del mismo Nginx que sirve esta página.
 async function api(path, method = "GET", data = null, authenticated = true) {
+    const requestSession=sessionEpoch;
+    if(authenticated) await SessionActivity.ensure();
+    if(authenticated && requestSession!==sessionEpoch) throw new Error("La sesión cambió. Ingresa de nuevo.");
     const headers = { Accept: "application/json" };
     if (authenticated) headers.Authorization = `Bearer ${token}`;
     const multipart = data instanceof FormData;
@@ -38,7 +53,7 @@ async function api(path, method = "GET", data = null, authenticated = true) {
     }
     const body = await response.json().catch(() => ({}));
     if (!response.ok) {
-        if (response.status === 401 && authenticated) {
+        if (response.status === 401 && authenticated && requestSession===sessionEpoch) {
             logout();
             throw new Error("La sesión venció o no es válida. Ingresa de nuevo.");
         }
@@ -66,6 +81,8 @@ async function submit(form, task) {
 
 // Regresa al acceso y descarta la identidad y los datos de la sesión anterior.
 function logout() {
+    SessionActivity.stop(); sessionEpoch++;
+    closePasswordReset();
     token = "";
     user = null;
     cart = []; pendingSale = null; renderCart();
@@ -75,6 +92,7 @@ function logout() {
     PayPalCheckout.clear();
     ReportView.clear();
     SalesHistoryView.clear();
+    CashRegisterView.clear();
     $("invoice-form").reset();
     $("buyer-type").value="cf";
     for(const id of ["buyer-nit","buyer-name","buyer-address"]) $(id).value="";
@@ -122,6 +140,10 @@ async function loadCategories(selected = $("category").value) {
     $("filter-category").replaceChildren(new Option("Todas las categorías", ""));
     for (const category of data.categorias) $("filter-category").add(new Option(category.nombre, String(category.id)));
     $("filter-category").value = filter;
+    const salesCategory=$("sales-category").value;
+    $("sales-category").replaceChildren(new Option("Todas las categorías", ""));
+    for(const category of data.categorias) $("sales-category").add(new Option(category.nombre,String(category.id)));
+    $("sales-category").value=salesCategory;
     $("category-help").hidden = data.categorias.length > 0;
     $("product-fields").disabled = data.categorias.length === 0;
     $("category-list").replaceChildren();
@@ -245,7 +267,8 @@ $("login-form").addEventListener("submit", (event) => {
         const password = $("password").value;
         $("password").value = "";
         const data = await api("auth/login", "POST", { email, password }, false);
-        token = data.access_token;
+        sessionEpoch++; token = data.access_token;
+        SessionActivity.start(data.expires_in);
         const profile = await api("auth/me");
         user = profile.user;
         restoreCheckout();
@@ -372,9 +395,49 @@ async function loadUsers() {
             try { await api(`auth/users/${account.id}`,'PATCH',{rol:role.value,activo:Number(state.value)}); await loadUsers(); }
             catch(error) { message(error.message,true); save.disabled=false; }
         });
+        const reset=document.createElement('button'); reset.type='button'; reset.className='btn btn-outline-secondary btn-sm ms-2'; reset.textContent='Restablecer contraseña';
+        reset.addEventListener('click',()=>openPasswordReset(account)); action.append(reset);
         $("users-body").append(row);
     }
 }
+
+let resetPasswordAccount=null;
+function closePasswordReset() {
+    $("reset-password-dialog").close(); $("reset-password-form").reset();
+    $("reset-password-message").textContent=''; resetPasswordAccount=null;
+}
+function openPasswordReset(account) {
+    if(user?.rol!=='administrador' || $("reset-password-form").dataset.busy==='true') return;
+    closePasswordReset(); resetPasswordAccount={id:String(account.id),nombre:account.nombre};
+    $("reset-password-account").textContent=`Cuenta: ${account.nombre} (${account.email})`;
+    $("reset-password-dialog").showModal(); $("reset-admin-password").focus();
+}
+$("reset-password-cancel").addEventListener('click',closePasswordReset);
+$("reset-password-dialog").addEventListener('cancel',event=>{event.preventDefault();closePasswordReset();});
+$("reset-password-form").addEventListener('submit',async event=>{
+    event.preventDefault(); const form=event.currentTarget;
+    if(form.dataset.busy==='true' || !resetPasswordAccount || user?.rol!=='administrador') return;
+    const password=$("reset-new-password").value, confirmacion=$("reset-confirm-password").value;
+    if(password!==confirmacion || new TextEncoder().encode(password).length<12 || new TextEncoder().encode(password).length>72) {
+        $("reset-password-message").textContent='Las contraseñas deben coincidir y tener entre 12 y 72 bytes.';return;
+    }
+    const target=resetPasswordAccount, session=sessionEpoch;
+    form.dataset.busy='true'; const button=form.querySelector('button[type="submit"]'); button.disabled=true;
+    $("reset-password-message").textContent='Guardando…';
+    const payload={password,confirmacion,admin_password:$("reset-admin-password").value};
+    try {
+        await api(`auth/users/${target.id}/password`,'POST',payload);
+        if(sessionEpoch!==session) return;
+        const own=target.id===String(user.id); closePasswordReset();
+        if(own) logout();
+        message(own ? 'Contraseña restablecida. Ingresa con tu nueva contraseña.' : `Contraseña de ${target.nombre} restablecida. Sus sesiones anteriores quedaron invalidadas.`);
+    } catch(error) {if(sessionEpoch===session) $("reset-password-message").textContent=error.message;}
+    finally {
+        payload.password='';payload.confirmacion='';payload.admin_password='';
+        for(const id of ['reset-admin-password','reset-new-password','reset-confirm-password']) $(id).value='';
+        button.disabled=false;form.dataset.busy='false';
+    }
+});
 
 // Registra cuentas desde la API sin guardar contraseñas en el navegador.
 $("user-form").addEventListener("submit", (event) => {
@@ -523,51 +586,83 @@ function renderCart() {
     $("save-sale").textContent = pendingSale ? "Reintentar confirmación" : "Registrar venta";
     $("clear-cart").disabled = !cart.length || Boolean(pendingSale);
     $("checkout-pending").hidden = !pendingSale;
+    $("checkout-pending").textContent=pendingSale?.metodo_pago==="tarjeta" ? "Pago de PayPal pendiente. Puedes verificarlo o cancelar la venta." : "Hay una venta por confirmar. Reintenta sin cambiar el carrito para evitar duplicarla.";
+    $("cancel-pending-sale").hidden = pendingSale?.metodo_pago!=="tarjeta";
+    $("cancel-pending-sale").disabled = $("checkout-form").dataset.busy==="true";
     $("payment-method").disabled=Boolean(pendingSale);
     $("sales-results").querySelectorAll("button").forEach((button) => { button.disabled = Boolean(pendingSale) || button.dataset.available === "false"; });
 }
 
-// Consulta el inventario real; la caja no mantiene un catálogo separado.
-$("sales-search-form").addEventListener("submit", (event) => {
-    event.preventDefault();
-    submit(event.currentTarget, async () => {
-        const filters = new URLSearchParams({buscar: $("sales-search").value.trim(), limite: "10"});
-        const data = await api(`inventario/productos?${filters}`);
-        $("sales-results").replaceChildren();
-        $("sales-results-label").textContent = data.productos.length
-            ? `Se muestran ${data.productos.length} de ${data.paginacion.total} resultados. Puedes precisar la búsqueda.`
-            : "No se encontraron productos.";
-        for (const product of data.productos) {
-            const row = document.createElement("tr");
-            cell(row, product.codigo); cell(row, product.nombre);
-            cell(row, money(product.precio)); cell(row, units(product.stock));
-            const available = Number.isInteger(Number(product.stock)) && Number(product.stock) >= 1;
-            const td = document.createElement("td");
-            const add = cartButton(available ? "Agregar" : "Sin existencias", () => {
-                if (pendingSale) return;
-                const existing = cart.find((item) => String(item.id) === String(product.id));
-                if (existing) {
-                    if (existing.cantidad >= Math.min(999999, Number(product.stock))) { message("No hay más unidades disponibles.", true); return; }
-                    existing.cantidad++; existing.stock = product.stock;
-                } else {
-                    if (cart.length >= 50) { message("El carrito admite hasta 50 productos.", true); return; }
-                    cart.push({...product, cantidad: 1});
-                }
-                $("sale-result").hidden = true; renderCart(); message("Producto agregado al carrito.");
-            }, !available || Boolean(pendingSale));
-            add.dataset.available = String(available); td.append(add); row.append(td); $("sales-results").append(row);
-        }
-    });
+// Solo se presenta la última búsqueda, incluso al cambiar rápidamente de categoría.
+let salesSearchRequest=0;
+async function loadSalesProducts() {
+    const ticket=++salesSearchRequest,session=sessionEpoch;
+    const filters = new URLSearchParams({buscar: $("sales-search").value.trim(), limite: "10"});
+    if($("sales-category").value) filters.set("categoria_id",$("sales-category").value);
+    let data;
+    try {data=await api(`inventario/productos?${filters}`);}
+    catch(error) {if(ticket!==salesSearchRequest || session!==sessionEpoch) return;throw error;}
+    if(ticket!==salesSearchRequest || session!==sessionEpoch) return;
+    $("sales-results").replaceChildren();
+    $("sales-results-label").textContent = data.productos.length
+        ? `Se muestran ${data.productos.length} de ${data.paginacion.total} resultados. Puedes precisar la búsqueda.`
+        : "No se encontraron productos.";
+    for (const product of data.productos) {
+        const row = document.createElement("tr");
+        const photo=cell(row,"");
+        if(product.imagen_url) photo.append(productImage(product));
+        else photo.textContent="Sin imagen";
+        cell(row, product.codigo); cell(row, product.nombre);
+        cell(row, money(product.precio)); cell(row, units(product.stock));
+        const available = Number.isInteger(Number(product.stock)) && Number(product.stock) >= 1;
+        const td = document.createElement("td");
+        const add = cartButton(available ? "Agregar" : "Sin existencias", () => {
+            if (pendingSale) return;
+            const existing = cart.find((item) => String(item.id) === String(product.id));
+            if (existing) {
+                if (existing.cantidad >= Math.min(999999, Number(product.stock))) { message("No hay más unidades disponibles.", true); return; }
+                existing.cantidad++; existing.stock = product.stock;
+            } else {
+                if (cart.length >= 50) { message("El carrito admite hasta 50 productos.", true); return; }
+                cart.push({...product, cantidad: 1});
+            }
+            $("sale-result").hidden = true; renderCart(); message("Producto agregado al carrito.");
+        }, !available || Boolean(pendingSale));
+        add.dataset.available = String(available); td.append(add); row.append(td); $("sales-results").append(row);
+    }
+}
+$("sales-search-form").addEventListener("submit",event=>{
+    event.preventDefault();submit(event.currentTarget,loadSalesProducts);
+});
+$("sales-category").addEventListener("change",async()=>{
+    $("sales-search").value="";
+    message("");
+    try {await loadSalesProducts();}
+    catch(error) {message(error.message,true);}
 });
 
 $("clear-cart").addEventListener("click", () => { if (!pendingSale) { cart = []; renderCart(); } });
+
+$("cancel-pending-sale").addEventListener("click",()=>{
+    if(!pendingSale || pendingSale.metodo_pago!=="tarjeta") return;
+    submit($("checkout-form"),async()=>{
+        const session=sessionEpoch,reference=pendingSale.referencia;
+        renderCart();
+        // La referencia persistida recupera la misma venta si se perdió la respuesta inicial.
+        const data=await api("ventas/","POST",pendingSale);
+        if(session!==sessionEpoch || pendingSale?.referencia!==reference) return;
+        if(data.venta.estado==='confirmada') {await completeCheckout(data);message('El pago ya estaba confirmado. La factura está disponible.');return;}
+        if(data.venta.estado==='anulada') {onPendingSaleCancelled(data.venta);return;}
+        await PayPalCheckout.cancel(data.venta.id);
+    });
+});
 
 // Envía solo ids y cantidades; PHP obtiene los precios y calcula el total definitivo.
 $("checkout-form").addEventListener("submit", (event) => {
     event.preventDefault();
     submit(event.currentTarget, async () => {
         if (!cart.length) return;
-        const owner = user.id; const session = token;
+        const owner = user.id; const session = sessionEpoch;
         clearInvoice();
         if (!pendingSale) {
             const comprador=$("buyer-type").value === "cf" ? {nombre:"CF"} : {
@@ -584,13 +679,13 @@ $("checkout-form").addEventListener("submit", (event) => {
         catch (error) {
             if ([400,403,404,409,413,415,422].includes(error.status)) {
                 sessionStorage.removeItem(checkoutKey(owner));
-                if (token === session) pendingSale = null;
+                if (sessionEpoch === session) pendingSale = null;
             }
-            if (token === session) renderCart();
+            if (sessionEpoch === session) renderCart();
             throw error;
         }
-        if (token !== session) return;
-        if(data.venta.estado==='pendiente_pago') { await PayPalCheckout.open(data.venta.id); return; }
+        if (sessionEpoch !== session) return;
+        if(data.venta.estado==='pendiente_pago' || (data.venta.estado==='anulando' && data.venta.metodo_pago==='tarjeta')) { await PayPalCheckout.open(data.venta.id); return; }
         if(data.venta.estado!=='confirmada') { releaseCancelledCheckout(data.venta); throw new Error('La venta fue anulada. Registra una nueva compra si corresponde.'); }
         await completeCheckout(data);
 
@@ -601,13 +696,24 @@ $("checkout-form").addEventListener("submit", (event) => {
 // Libera únicamente el carrito relacionado; no toca otra compra que esté en preparación.
 function releaseCancelledCheckout(sale) {
     if(pendingSale?.referencia===sale.referencia) {
-        sessionStorage.removeItem(checkoutKey());cart=[];pendingSale=null;renderCart();
+        sessionStorage.removeItem(checkoutKey());cart=[];pendingSale=null;
+        $("buyer-type").value="cf";$("payment-method").value="efectivo";
+        for(const id of ["buyer-nit","buyer-name","buyer-address"]) $(id).value="";
+        renderCart();
     }
+}
+function onPendingSaleCancelled(sale) {
+    PayPalCheckout.clear();
+    releaseCancelledCheckout(sale);
+    message('Venta cancelada. Las existencias se liberaron y puedes registrar otra venta.');
 }
 async function completeCheckout(data) {
     const related=pendingSale?.referencia===data.venta.referencia;
     if(related) {
-        sessionStorage.removeItem(checkoutKey());cart=[];pendingSale=null;renderCart();
+        sessionStorage.removeItem(checkoutKey());cart=[];pendingSale=null;
+        $("buyer-type").value="cf";$("payment-method").value="efectivo";
+        for(const id of ["buyer-nit","buyer-name","buyer-address"]) $(id).value="";
+        renderCart();
         $("buyer-type").value="cf";
         for(const id of ["buyer-nit","buyer-name","buyer-address"]) $(id).value="";
         $("payment-method").value="efectivo";updateBuyer(0);
@@ -622,7 +728,7 @@ async function completeCheckout(data) {
     try {await loadProducts();await loadAlerts();}
     catch(error) {message(`Venta confirmada. No se pudo actualizar el listado: ${error.message}`,true);}
 }
-PayPalCheckout.init({api,getToken:()=>token,onPaid:completeCheckout,onCancelled:releaseCancelledCheckout});
+PayPalCheckout.init({api,getToken:()=>token,getSession:()=>sessionEpoch,onPaid:completeCheckout,onCancelled:onPendingSaleCancelled});
 
 // Quita datos de una factura anterior antes de consultar otra o cerrar sesión.
 function clearInvoice() {
@@ -640,11 +746,11 @@ function clearInvoice() {
 // La factura usa cantidades y precios históricos, no vuelve a pedir precios al inventario.
 async function loadInvoice(id, origin = "sales-history-panel") {
     if ($(origin).hidden) return;
-    const session = token;
+    const session = sessionEpoch;
     clearInvoice();
     const request = invoiceRequest;
     const data = await api(`ventas/${encodeURIComponent(id)}/factura`);
-    if (!token || token !== session || request !== invoiceRequest || $(origin).hidden) return;
+    if (!token || sessionEpoch !== session || request !== invoiceRequest || $(origin).hidden) return;
     const invoice = data.factura;
     $("invoice-title").textContent = `Factura ${invoice.numero}${invoice.estado && invoice.estado!=="confirmada" ? " · " + invoice.estado.toUpperCase() : ""}`;
     const date = new Date(invoice.fecha).toLocaleString("es-GT", {timeZone: "America/Guatemala", hour12: true});
@@ -676,15 +782,16 @@ $("invoice-form").addEventListener("submit", (event) => {
 $("print-invoice").addEventListener("click", async () => {
     if ($("invoice-panel").hidden || currentInvoiceId===null) return;
     const button=$("print-invoice"); button.disabled=true;
-    const id=currentInvoiceId, session=token, request=invoiceRequest;
+    const id=currentInvoiceId, session=sessionEpoch, request=invoiceRequest;
     try {
-        const downloaded = await InvoicePdfDownload.download(id,session,()=>token===session && currentInvoiceId===id && invoiceRequest===request);
-        if (downloaded && token===session && currentInvoiceId===id && invoiceRequest===request) {
+        await SessionActivity.ensure();
+        const downloaded = await InvoicePdfDownload.download(id,token,()=>sessionEpoch===session && currentInvoiceId===id && invoiceRequest===request);
+        if (downloaded && sessionEpoch===session && currentInvoiceId===id && invoiceRequest===request) {
             finishInvoice();
             message("Factura descargada. Puedes continuar.");
         }
     } catch(error) {
-        if(token===session) {
+        if(sessionEpoch===session) {
             if(error.status===401) logout();
             message(error.message || "No se pudo descargar el PDF.",true);
         }
@@ -727,13 +834,15 @@ const views = {
     "product-panel": ["Registrar producto", "Agrega un producto con su precio, existencias e imagen."],
     "category-panel": ["Categorías", "Organiza los productos para encontrarlos con facilidad."],
     "sales-panel": ["Caja", "Busca productos, registra la venta y descarga su factura."],
+    "cash-register-panel": ["Cuadre de caja", "Abre tu turno, cuenta el efectivo y consulta los cierres."],
     "sales-history-panel": ["Historial de ventas", "Consulta tus ventas por fecha o vendedor y recupera sus facturas."],
     "reports-panel": ["Reportes", "Conoce las ventas y los productos que más se mueven."],
     "users-panel": ["Usuarios", "Administra las cuentas de quienes trabajan en la ferretería."]
 };
 const adminViews = ["product-panel", "category-panel", "users-panel", "reports-panel"];
-ReportView.init({api, money, units, getToken:()=>token, onUnauthorized:()=>{ logout(); message("La sesión venció. Ingresa de nuevo.",true); }});
+ReportView.init({api, money, units, getToken:()=>token, getSession:()=>sessionEpoch, ensureSession:()=>SessionActivity.ensure(), onUnauthorized:()=>{ logout(); message("La sesión venció. Ingresa de nuevo.",true); }});
 
+CashRegisterView.init({api,getUser:()=>user,money});
 SalesHistoryView.init({api, getUser:()=>user, money, closeInvoice:clearInvoice, openInvoice:id=>loadInvoice(id,"sales-history-panel")});
 
 async function showView(id) {
@@ -758,7 +867,7 @@ async function showView(id) {
         else link.removeAttribute("aria-current");
     });
     if (!desktopMenu.matches) closeMenu();
-    if(user.rol==="administrador" && ["dashboard-panel","reports-panel"].includes(id)) loadWeather();
+    if(id==="dashboard-panel") loadWeather();
     if (id === "dashboard-panel") {
         const [data] = await Promise.all([api("inventario/productos?limite=1"), loadCategories(), loadAlerts()]);
         $("dashboard-products").textContent = units(data.paginacion.total);
@@ -766,21 +875,35 @@ async function showView(id) {
         $("category-stat-note").textContent = user.rol === "administrador" ? "Organizar productos →" : "Consultar productos →";
     }
     if (id === "list-panel") { await loadCategories(); await loadProducts(); }
-    if (id === "product-panel" || id === "category-panel") await loadCategories();
+    if (["product-panel","category-panel","sales-panel"].includes(id)) await loadCategories();
     if (id === "users-panel") await loadUsers();
     if (id === "reports-panel") await ReportView.load();
     if (id === "sales-history-panel") await SalesHistoryView.open();
+    if (id === "cash-register-panel") await CashRegisterView.load();
+}
+
+// Reglas orientativas del negocio; no representan una predicción de ventas.
+function weatherOutlook(code) {
+    if (code === 800 || code === 801) return 'Afluencia esperada: alta en tienda. Se prevén más compras presenciales.';
+    if (code >= 802 && code <= 804) return 'Afluencia esperada: baja en tienda. Se prevé mayor preferencia por pedidos en línea.';
+    if (code >= 200 && code < 700) return 'Afluencia esperada: baja en tienda por precipitaciones. Se prevé mayor preferencia por pedidos en línea.';
+    if (code >= 700 && code < 800) return 'Afluencia esperada: baja en tienda por condiciones adversas. Se prevé mayor preferencia por pedidos en línea.';
+    return 'No hay información suficiente para estimar la afluencia.';
 }
 
 // El clima puede fallar sin impedir las consultas de inventario o reportes.
 async function loadWeather() {
-    const session=token;
-    try {
-        const data=await api('reportes/clima'); if(token!==session) return;
-        const weather=data.clima;
-        const text=weather.disponible ? `${weather.ciudad}: ${weather.temperatura} °C · ${weather.descripcion} · Humedad ${weather.humedad}%` : weather.mensaje;
+    const session=sessionEpoch;
+    const render=(text,outlook)=>{
         document.querySelectorAll('[data-weather]').forEach(el=>el.textContent=text);
-    } catch(error) { if(token===session) document.querySelectorAll('[data-weather]').forEach(el=>el.textContent='Clima no disponible por el momento'); }
+        document.querySelectorAll('[data-weather-outlook]').forEach(el=>el.textContent=outlook);
+    };
+    try {
+        const data=await api('reportes/clima'); if(sessionEpoch!==session) return;
+        const weather=data.clima;
+        render(weather.disponible ? `${weather.ciudad} · ${weather.temperatura} °C · ${weather.descripcion} (ahora)` : weather.mensaje,
+            weather.disponible ? weatherOutlook(weather.codigo) : 'Afluencia sin estimar hasta disponer del clima.');
+    } catch(error) { if(sessionEpoch===session) render('Clima no disponible por el momento','Afluencia sin estimar hasta disponer del clima.'); }
 }
 
 async function openView(id, replace = false) {

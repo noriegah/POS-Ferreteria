@@ -53,3 +53,9 @@ Pasaron las pruebas de cliente y de la ruta QR, además de las 59 comprobaciones
 Se comprobó la imagen de una factura temporal con un lector local independiente (ZXing-C++): el texto coincidió exactamente en 240 × 240 y al reducirlo a los 160 × 160 que se muestran en la interfaz. Ese lector se utilizó solo como herramienta de verificación y no se añadió a las dependencias del proyecto. La API remota de lectura del proveedor rechazó las pruebas de subida/descarga; no forma parte de la aplicación.
 
 En navegador se verificó el QR cargado, el botón de impresión habilitado después de decodificar la imagen y el ancho móvil sin desbordamiento. No se envió un trabajo a una impresora durante estas pruebas. Las facturas, cuentas e imágenes de demostración se retiraron.
+
+## Validación del comprobante
+
+El QR ahora codifica una URL firmada hacia `/validar-factura.html`. La página consulta `GET /api/ventas/facturas/validar?referencia=...&firma=...`. La firma HMAC impide consultar referencias alteradas; el endpoint devuelve número, estado, fecha, total y datos del emisor, sin nombre, NIT ni dirección del comprador. Las facturas anuladas y en proceso de anulación se muestran como no vigentes. No sustituye una certificación FEL.
+
+`PUBLIC_APP_URL` debe ser la dirección accesible de la aplicación (con puerto si corresponde). Para teléfonos en la red local, usar la IP de la computadora y conectar el teléfono a la misma red; localhost solo funciona en la propia computadora. En hosting, configurar el dominio HTTPS. Cambiar la clave interna de Ventas invalida las firmas existentes. Los QR antiguos ya descargados conservan su contenido anterior; hay que volver a descargar la factura para obtener el enlace nuevo.

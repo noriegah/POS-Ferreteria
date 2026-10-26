@@ -8,14 +8,16 @@
     <link rel="stylesheet" href="/vendor/adminhmd/css/bootstrap.min.css">
     <link rel="stylesheet" href="/vendor/adminhmd/vendors/bootstrap-icons/bootstrap-icons.css">
     <link rel="stylesheet" href="/vendor/adminhmd/css/style.css">
-    <link rel="stylesheet" href="/styles.css?v=paypal-1">
-    <script src="/js/invoice-qr.js?v=qr-1" defer></script>
+    <link rel="stylesheet" href="/styles.css?v=invoice-formal-1">
+    <script src="/js/invoice-qr.js?v=validation-1" defer></script>
     <script src="/js/invoice-pdf.js?v=paypal-1" defer></script>
     <script src="/vendor/chartjs/chart.umd.min.js" defer></script>
-    <script src="/js/reports.js?v=reports-final-1" defer></script>
-    <script src="/js/sales-history.js?v=paypal-1" defer></script>
-    <script src="/js/paypal-checkout.js?v=paypal-1" defer></script>
-    <script src="/app.js?v=paypal-1" defer></script>
+    <script src="/js/reports.js?v=idle-1" defer></script>
+    <script src="/js/sales-history.js?v=cancel-pending-1" defer></script>
+    <script src="/js/paypal-checkout.js?v=cancel-pending-1" defer></script>
+    <script src="/js/cash-register.js?v=cash-1" defer></script>
+    <script src="/js/session-activity.js?v=idle-1" defer></script>
+    <script src="/app.js?v=cancel-pending-1" defer></script>
 </head>
 <body class="pos-login">
     <!-- Estructura de AdminHMD adaptada: solo aparecen módulos implementados. -->
@@ -32,6 +34,7 @@
                 <p class="nav-caption">PRINCIPAL</p>
                 <a class="nav-link" href="#dashboard-panel"><span class="nav-icon"><i class="bi bi-grid-1x2" aria-hidden="true"></i></span><span class="nav-text">Dashboard</span></a>
                 <a class="nav-link" href="#sales-panel"><span class="nav-icon"><i class="bi bi-cart" aria-hidden="true"></i></span><span class="nav-text">Caja</span></a>
+                <a class="nav-link" href="#cash-register-panel"><span class="nav-icon"><i class="bi bi-cash-stack" aria-hidden="true"></i></span><span class="nav-text">Cuadre de caja</span></a>
                 <a class="nav-link" href="#sales-history-panel"><span class="nav-icon"><i class="bi bi-receipt" aria-hidden="true"></i></span><span class="nav-text">Historial de ventas</span></a>
                 <a class="nav-link" href="#list-panel"><span class="nav-icon"><i class="bi bi-box-seam" aria-hidden="true"></i></span><span class="nav-text">Productos</span></a>
                 <a class="nav-link" href="#reports-panel" data-admin-only hidden><span class="nav-icon"><i class="bi bi-bar-chart" aria-hidden="true"></i></span><span class="nav-text">Reportes</span></a>
@@ -58,15 +61,16 @@
                     <p id="message" class="alert" role="status" aria-live="polite" hidden></p>
         <section id="login-section" class="auth-card login-card" aria-labelledby="login-title">
             <p class="eyebrow mb-2">Bienvenido</p><h2 class="h3" id="login-title">Iniciar sesión</h2>
-            <p>Ingresa con tu cuenta para consultar el inventario.</p>
+            <p>Ingresa con tu cuenta para gestionar tu Ferretería</p>
             <form id="login-form">
                 <label class="form-label" for="email">Correo electrónico</label>
                 <input class="form-control" id="email" type="email" autocomplete="username" required maxlength="254">
                 <label class="form-label" for="password">Contraseña</label>
                 <input class="form-control" id="password" type="password" autocomplete="current-password" required>
                 <button class="btn btn-primary w-100" type="submit">Ingresar</button>
+                <p>Para restablecer tus credenciales comunicate con el administrador</p>
             </form>
-            <p class="hint">La sesión dura 15 minutos. Al recargar la página tendrás que ingresar de nuevo.</p>
+
         </section>
 
         <div id="inventory-section" hidden>
@@ -89,7 +93,12 @@
                     <a href="#category-panel" class="stat-card" id="category-stat"><span class="stat-icon blue"><i class="bi bi-tags" aria-hidden="true"></i></span><div><span>Categorías</span><strong id="dashboard-categories">—</strong><small id="category-stat-note">Organizar productos →</small></div></a>
                     <a href="#list-panel" class="stat-card" id="stock-stat"><span class="stat-icon amber"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i></span><div><span>Stock bajo</span><strong id="dashboard-low">—</strong><small>Productos con menos de 5 unidades</small></div></a>
                 </div>
-                <div class="panel mb-3" data-admin-only hidden><h2 class="h5"><i class="bi bi-cloud-sun" aria-hidden="true"></i> Clima del día</h2><p data-weather role="status">Consultando clima…</p><small class="hint">Fuente: OpenWeatherMap</small></div>
+                <aside class="panel mb-3 weather-card" aria-label="Clima y afluencia estimada">
+    <h2 class="h6"><i class="bi bi-cloud-sun" aria-hidden="true"></i> Clima y afluencia</h2>
+    <p data-weather role="status" class="mb-2">Consultando clima…</p>
+    <p data-weather-outlook class="mb-2">Estimación pendiente del clima.</p>
+    <small class="hint">Estimación orientativa · OpenWeatherMap</small>
+</aside>
                 <div class="panel dashboard-shortcuts"><div><p class="eyebrow">A UN CLIC</p><h2 class="h5">¿Qué necesitas hacer?</h2></div><div class="actions"><a href="#product-panel" class="btn btn-primary" data-admin-only hidden><i class="bi bi-plus-lg" aria-hidden="true"></i> Nuevo producto</a><a href="#list-panel" class="btn btn-outline-secondary">Consultar productos</a><a href="#users-panel" class="btn btn-outline-secondary" data-admin-only hidden>Gestionar usuarios</a></div></div>
             <section id="alerts-panel" class="alert alert-warning" aria-labelledby="alerts-title" hidden>
                 <h2 id="alerts-title" class="h6">Productos con stock bajo (menos de 5 unidades)</h2>
@@ -132,7 +141,7 @@
 
                 <section id="category-panel" class="panel" aria-labelledby="category-title">
                     <h2 class="h5" id="category-title">Categorías</h2>
-                    <p>Las categorías agrupan los productos.</p>
+
                     <form id="category-form">
                         <label class="form-label" for="category-name">Nombre de la categoría</label>
                         <input class="form-control" id="category-name" required maxlength="100" placeholder="Ejemplo: Herramientas">
@@ -172,25 +181,29 @@
                     <button id="next-page" class="btn btn-outline-secondary btn-sm" type="button" disabled>Siguiente</button>
                 </div>
                 <p id="empty-list" class="hint" hidden>No hay productos que coincidan con la búsqueda.</p>
-                <p class="hint">Desactivar retira el producto de esta lista y conserva su registro.</p>
+
             </section>
             <!-- Caja sencilla para ambos roles: busca productos, arma el carrito y registra la venta. -->
             <section id="sales-panel" class="panel" aria-labelledby="sales-title">
                 <h2 id="sales-title" class="h5">Caja</h2>
                 <form id="sales-search-form">
                     <label class="form-label" for="sales-search">Buscar producto para vender</label>
-                    <div class="actions"><input id="sales-search" class="form-control" type="search" maxlength="150" placeholder="Código o nombre" required><button type="submit" class="btn btn-primary">Buscar en inventario</button></div>
+                    <div class="two-columns">
+                        <input id="sales-search" class="form-control" type="search" maxlength="150" placeholder="Código o nombre">
+                        <div><label class="form-label" for="sales-category">Categoría</label><select id="sales-category" class="form-select"><option value="">Todas las categorías</option></select></div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Buscar en inventario</button>
                 </form>
                 <p id="sales-results-label" class="hint" role="status">Busca un producto para agregarlo al carrito.</p>
                 <div class="table-container"><table class="table align-middle">
                     <caption class="visually-hidden">Productos encontrados para vender</caption>
-                    <thead><tr><th>Código</th><th>Producto</th><th>Precio</th><th>Disponibles</th><th>Acción</th></tr></thead>
+                    <thead><tr><th>Foto</th><th>Código</th><th>Producto</th><th>Precio</th><th>Disponibles</th><th>Acción</th></tr></thead>
                     <tbody id="sales-results"></tbody>
                 </table></div>
                 <h3 class="h6 mt-4">Carrito</h3>
                 <form id="checkout-form">
                     <label for="payment-method" class="form-label">Método de pago</label>
-                    <select id="payment-method" class="form-select mb-2"><option value="efectivo">Efectivo</option><option id="payment-paypal-option" value="tarjeta" disabled>PayPal Sandbox (prueba)</option></select>
+                    <select id="payment-method" class="form-select mb-2"><option value="efectivo">Efectivo</option><option id="payment-paypal-option" value="tarjeta" disabled>PayPal Sandbox</option></select>
                     <p id="payment-configuration" class="hint">Consultando medios de pago…</p>
                     <!-- Los datos se guardan con la venta, no se agregan después de descontar el stock. -->
                     <fieldset id="buyer-fields" class="buyer-fields">
@@ -212,15 +225,15 @@
                     <p class="mb-1">Subtotal sin IVA: <span id="cart-base">Q 0.00</span></p>
                     <p class="mb-1">IVA incluido (12 %): <span id="cart-tax">Q 0.00</span></p>
                     <p class="fw-bold fs-5">Total: <span id="cart-total">Q 0.00</span></p>
-                    <p class="hint">Los precios en quetzales incluyen IVA del 12 %. Al registrar, se confirma el precio y el stock vigentes.</p>
+                    <p class="hint">Precios en quetzales con IVA incluido.</p>
                     <p id="checkout-pending" class="alert alert-warning" hidden>Hay una venta por confirmar. Reintenta sin cambiar el carrito para evitar duplicarla.</p>
-                    <div class="actions"><button id="save-sale" class="btn btn-primary" type="submit" disabled>Registrar venta</button><button id="clear-cart" class="btn btn-outline-secondary" type="button" disabled>Vaciar carrito</button></div>
+                    <div class="actions"><button id="save-sale" class="btn btn-primary" type="submit" disabled>Registrar venta</button><button id="clear-cart" class="btn btn-outline-secondary" type="button" disabled>Vaciar carrito</button><button id="cancel-pending-sale" class="btn btn-outline-danger" type="button" hidden>Cancelar venta</button></div>
                 </form>
                 <p id="sale-result" class="alert alert-success mt-3" role="status" hidden></p>
                 <div id="cash-invoice-slot">
                 <!-- Se llena con la respuesta del servidor, usando siempre texto seguro. -->
                 <article id="invoice-panel" class="panel invoice-sheet mt-4" aria-labelledby="invoice-title" hidden>
-                    <div class="section-heading"><div><h3 id="invoice-title" class="h5">Factura</h3><p>FerreSync · Proyecto universitario</p></div></div>
+                    <div class="section-heading"><div><h3 id="invoice-title" class="h5">Factura</h3><p>Servicios Hanona S. A. · NIT 2345674<br>1ra Calle 6-35, Zona 1, Zacualpa, Quiché</p></div></div>
                     <p id="invoice-info"></p>
                     <p id="invoice-buyer"></p>
                     <p class="hint">Precios en quetzales con IVA del 12 % incluido.</p>
@@ -232,8 +245,8 @@
                     <div class="invoice-summary">
                     <!-- La imagen se obtiene con JWT; el navegador nunca llama directamente al proveedor. -->
                     <figure class="invoice-qr">
-                        <img id="invoice-qr-image" width="160" height="160" alt="Código QR de referencia de la factura" hidden>
-                        <figcaption><strong>Referencia de factura</strong><p id="invoice-qr-status" class="hint" role="status"></p></figcaption>
+                        <img id="invoice-qr-image" width="160" height="160" alt="Código QR para validar la factura" hidden>
+                        <figcaption><strong>Validación de factura</strong><p id="invoice-qr-status" class="hint" role="status"></p></figcaption>
                         <button id="retry-invoice-qr" class="btn btn-outline-secondary btn-sm" type="button" hidden>Reintentar QR</button>
                     </figure>
                     <div class="invoice-totals">
@@ -242,15 +255,30 @@
                         <p class="fs-5">Total: <strong id="invoice-total"></strong></p>
                     </div>
                     </div>
-                    <p class="hint">Comprobante académico del proyecto.</p>
+                    <p class="hint">Documento sin certificación FEL.</p>
                     <div class="actions"><button id="print-invoice" class="btn btn-outline-secondary" type="button">Imprimir factura</button><button id="new-sale" class="btn btn-primary" type="button">Nueva venta</button></div>
                 </article>
                 </div>
             </section>
             <!-- El historial permite recuperar comprobantes sin ocupar la pantalla de Caja. -->
+            <!-- Cada cajero abre y cierra su turno; el administrador consulta todos. -->
+            <section id="cash-register-panel" hidden aria-label="Cuadre de caja">
+                <div class="panel mb-3">
+                    <h2 class="h5">Cuadre de caja</h2>
+
+
+                    <p id="cash-message" role="status" class="text-danger"></p>
+                    <form id="cash-open-form"><label for="cash-fund" class="form-label">Fondo inicial (Q)</label><input id="cash-fund" class="form-control mb-3" type="number" min="0" max="99999999.99" step="0.01" required><button class="btn btn-primary" type="submit">Abrir turno</button></form>
+                    <div id="cash-current" hidden><p id="cash-current-summary" class="alert alert-info"></p>
+                    <form id="cash-close-form"><label for="cash-counted" class="form-label">Efectivo contado (Q)</label><input id="cash-counted" class="form-control mb-3" type="number" min="0" max="99999999.99" step="0.01" required>
+                    <label for="cash-notes" class="form-label">Observaciones (obligatorias si hay diferencia)</label><textarea id="cash-notes" class="form-control mb-3" maxlength="255"></textarea><p class="hint">Cuenta el dinero antes de cerrar. El cierre es definitivo.</p><button class="btn btn-warning" type="submit">Cerrar y guardar cuadre</button></form></div>
+                </div>
+                <div class="panel"><div class="actions"><h2 class="h5">Últimos 100 turnos</h2><button id="cash-refresh" class="btn btn-outline-secondary" type="button">Actualizar</button></div>
+                <div class="table-responsive"><table class="table text-nowrap"><thead><tr><th>Turno</th><th>Cajero</th><th>Apertura</th><th>Cierre</th><th>Estado</th><th>Esperado</th><th>Contado</th><th>Diferencia</th><th>Acciones</th></tr></thead><tbody id="cash-turn-body"></tbody></table></div></div>
+            </section>
             <section id="sales-history-panel" hidden aria-label="Historial de ventas">
                 <div class="panel">
-                    <h2 class="h5">Historial de ventas</h2><p class="hint">Consulta ventas y sus estados, y vuelve a descargar sus facturas. El cajero ve únicamente sus ventas.</p>
+                    <h2 class="h5">Historial de ventas</h2>
                     <form id="history-filters" class="history-filters">
                         <div><label for="history-from">Desde</label><input id="history-from" class="form-control" type="date" min="2000-01-01" max="2100-12-31" required></div>
                         <div><label for="history-to">Hasta</label><input id="history-to" class="form-control" type="date" min="2000-01-01" max="2100-12-31" required></div>
@@ -274,7 +302,7 @@
             <!-- Gestión mínima de cuentas: visible solo para el administrador. -->
             <!-- Reportes usa su propio módulo JavaScript y las mismas tarjetas del sistema. -->
             <section id="reports-panel" hidden aria-label="Reportes de ventas">
-<div class="panel mb-3"><h2 class="h5">Clima del día</h2><p data-weather role="status">Consultando clima…</p></div>
+
                 <form id="report-filters" class="panel report-filters">
                     <div><p class="eyebrow">RESULTADOS DE TU FERRETERÍA</p><h2 class="h5">Reportes de ventas</h2><p class="hint mb-0">Elige hasta 366 días. Todos los importes incluyen IVA.</p></div>
                     <div><label for="report-from">Desde</label><input id="report-from" type="date" class="form-control" min="2000-01-01" max="2100-12-31" required></div>
@@ -295,7 +323,7 @@
                     </div>
                     <div class="panel"><div class="report-heading"><div><p class="eyebrow">EVOLUCIÓN</p><h2 class="h5" id="report-chart-title">Ventas por mes</h2></div><span class="hint">Total en Q · Semanas desde el lunes</span></div><div class="report-chart-container"><canvas id="report-chart" role="img" aria-label="Gráfica de ventas"></canvas></div><details class="mt-3"><summary>Ver datos de la gráfica</summary><div class="table-container report-series-scroll"><table class="table"><caption class="visually-hidden">Datos de la gráfica de ventas</caption><thead><tr><th>Período</th><th>Ventas</th><th>Total</th></tr></thead><tbody id="report-series"></tbody></table></div></details></div>
                     <div class="report-grid">
-                        <div class="panel"><p class="eyebrow">LO QUE MÁS SE MUEVE</p><h2 class="h5">Categorías más vendidas</h2><p class="hint">Las primeras 8 por unidades vendidas.</p><div id="report-categories"></div><p class="hint mt-3 mb-0">Las ventas anteriores al módulo no guardaban categoría.</p></div>
+                        <div class="panel"><p class="eyebrow">LO QUE MÁS SE MUEVE</p><h2 class="h5">Categorías más vendidas</h2><p class="hint">Las primeras 8 por unidades vendidas.</p><div id="report-categories"></div></div>
                         <div class="panel"><p class="eyebrow">LOS FAVORITOS</p><h2 class="h5">Productos más vendidos</h2><p class="hint">Los primeros 8 por unidades vendidas.</p><div class="table-container"><table class="table table-hover"><caption class="visually-hidden">Productos más vendidos</caption><thead><tr><th>Código</th><th>Producto</th><th>Unidades</th><th>Importe</th></tr></thead><tbody id="report-products"></tbody></table></div></div>
                     </div>
                     <div class="panel"><div class="report-heading"><div><p class="eyebrow">DETALLE DEL PERÍODO</p><h2 class="h5">Ventas registradas</h2></div><span class="hint">25 ventas por página</span></div><div class="table-container"><table class="table table-hover"><caption class="visually-hidden">Ventas del período</caption><thead><tr><th>Factura</th><th>Fecha y hora</th><th>Comprador</th><th>Total</th></tr></thead><tbody id="report-sales"></tbody></table></div><div class="actions mt-3"><button type="button" id="report-prev" class="btn btn-outline-secondary">Anterior</button><span id="report-page" aria-live="polite"></span><button type="button" id="report-next" class="btn btn-outline-secondary">Siguiente</button></div></div>
@@ -303,7 +331,7 @@
             </section>
             <section id="users-panel" class="panel" aria-labelledby="users-title" data-admin-only hidden>
                 <div class="section-heading">
-                    <div><h2 class="h5" id="users-title">Usuarios</h2><p>Registra administradores o cajeros y consulta las cuentas del sistema.</p></div>
+                    <div><h2 class="h5" id="users-title">Usuarios</h2></div>
                     <button id="refresh-users" class="btn btn-outline-secondary" type="button">Actualizar usuarios</button>
                 </div>
                 <form id="user-form">
@@ -314,7 +342,7 @@
                         <div><label class="form-label" for="user-role">Rol del usuario</label><select class="form-select" id="user-role"><option value="cajero">Cajero</option><option value="administrador">Administrador</option></select></div>
                     </div>
                     <button class="btn btn-primary" type="submit">Registrar usuario</button>
-                    <p class="hint">Los permisos de cada rol son fijos. Puedes cambiar el rol y estado de otras cuentas desde la tabla. La contraseña debe tener entre 12 y 72 bytes. Se guarda como hash y no se muestra en la lista.</p>
+                    <p class="hint">Usa una contraseña de al menos 12 caracteres.</p>
                 </form>
                 <div class="table-container">
                     <table class="table table-hover align-middle mb-0">
@@ -328,20 +356,35 @@
 
                 </div>
             </main>
-            <!-- Se mantienen la autoría de la plantilla y los enlaces de comprobación. -->
+            <!-- Créditos de terceros en frontend/vendor/adminhmd/README-original.md. -->
             <footer class="admin-footer">
                 <div class="container-fluid px-3 px-lg-4 flex-wrap">
-                    <span class="small">Plantilla adminHMD © 2026 · <a href="https://github.com/HasanMahmudDev" target="_blank" rel="noopener">Md. Hasan Mahmud</a> · <a href="https://themewagon.com" target="_blank" rel="noopener">ThemeWagon</a></span>
-                    <div class="service-links small"><span>Servicios:</span> <a href="/api/auth/health" target="_blank" rel="noopener">Auth</a> <a href="/api/inventario/health" target="_blank" rel="noopener">Inventario</a> <a href="/api/ventas/health" target="_blank" rel="noopener">Ventas</a> <a href="/api/reportes/health" target="_blank" rel="noopener">Reportes</a></div>
+                    <span class="small">FerreSync · Punto de venta</span>
                 </div>
             </footer>
         </div>
     </div>
+<dialog id="cash-detail-dialog" class="panel" style="width:min(900px,94vw);max-height:85vh;overflow:auto;border:1px solid #bccdc9;border-radius:14px">
+<h2 id="cash-detail-title" class="h5">Detalle de turno</h2><p id="cash-detail-summary"></p><p id="cash-detail-note" style="white-space:pre-wrap;overflow-wrap:anywhere"></p>
+<div class="table-responsive"><table class="table text-nowrap"><thead><tr><th>Fecha</th><th>Factura</th><th>Movimiento</th><th>Importe</th></tr></thead><tbody id="cash-movements"></tbody></table></div><button id="cash-detail-close" type="button" class="btn btn-outline-secondary">Cerrar</button></dialog>
+<!-- Consulta de los cambios administrativos guardados en cada venta. -->
+<dialog id="sale-detail-dialog" class="panel" style="width:min(900px,94vw);max-height:85vh;overflow:auto;border:1px solid #bccdc9;border-radius:14px">
+    <h2 id="sale-detail-title" class="h5">Detalle de venta</h2>
+    <p id="sale-detail-summary"></p>
+    <div id="sale-detail-cancellation" class="alert alert-warning" hidden>
+        <p><strong>Motivo de anulación:</strong> <span id="sale-detail-reason" style="white-space:pre-wrap;overflow-wrap:anywhere"></span></p>
+        <p class="mb-0"><strong>Responsable:</strong> <span id="sale-detail-admin"></span> · <strong>Fecha de anulación:</strong> <span id="sale-detail-date"></span></p>
+    </div>
+    <h3 class="h6">Historial de cambios</h3>
+
+    <div class="table-responsive"><table class="table"><thead><tr><th>Fecha</th><th>Acción</th><th>Usuario</th><th>Motivo</th></tr></thead><tbody id="sale-detail-events" style="white-space:pre-wrap;overflow-wrap:anywhere"></tbody></table></div>
+    <button id="sale-detail-close" type="button" class="btn btn-outline-secondary">Cerrar</button>
+</dialog>
 <!-- Formulario administrativo; el servidor también comprueba el rol. -->
 <dialog id="sale-change-dialog" class="panel" style="width:min(620px,94vw);border:1px solid #bccdc9;border-radius:14px">
     <form id="sale-change-form">
         <h2 id="sale-change-title" class="h5">Corregir comprador</h2>
-        <p class="hint">Los productos, importes y vendedor originales se conservan.</p>
+
         <div id="sale-buyer-fields">
             <label class="form-label" for="sale-edit-name">Nombre o CF</label><input id="sale-edit-name" class="form-control mb-3" maxlength="150">
             <label class="form-label" for="sale-edit-nit">NIT</label><input id="sale-edit-nit" class="form-control mb-3" maxlength="20">
@@ -356,9 +399,21 @@
 <dialog id="paypal-dialog" class="panel" style="width:min(650px,94vw);border:1px solid #bccdc9;border-radius:14px">
 <h2 class="h5">Pago con PayPal Sandbox</h2><p id="paypal-total"></p>
 <p id="paypal-status" role="status"></p>
-<p class="hint">Las existencias quedan apartadas mientras el pago esté pendiente. Cerrar esta ventana no anula la venta; el administrador puede anularla desde el historial.</p>
+
 <div class="actions"><a id="paypal-approve" class="btn btn-primary" target="_blank" rel="noopener noreferrer" hidden>Abrir PayPal Sandbox</a>
-<button id="paypal-confirm" type="button" class="btn btn-success">Verificar pago</button><button id="paypal-retry" type="button" class="btn btn-outline-secondary">Reintentar preparación</button><button id="paypal-close" type="button" class="btn btn-outline-secondary">Cerrar</button></div>
+<button id="paypal-confirm" type="button" class="btn btn-success">Verificar pago</button><button id="paypal-retry" type="button" class="btn btn-outline-secondary">Reintentar preparación</button><button id="paypal-cancel-sale" type="button" class="btn btn-outline-danger">Cancelar venta</button><button id="paypal-close" type="button" class="btn btn-outline-secondary">Cerrar</button></div>
+</dialog>
+<dialog id="reset-password-dialog" class="panel" style="width:min(480px,94vw);max-height:85vh;overflow:auto;border-radius:14px" aria-labelledby="reset-password-title">
+    <form id="reset-password-form">
+        <h2 id="reset-password-title" class="h5">Restablecer contraseña</h2>
+        <p id="reset-password-account"></p>
+        <p class="hint">Se cerrarán las sesiones de esta cuenta. Comunica la nueva contraseña al usuario de forma privada.</p>
+        <div class="mb-3"><label class="form-label" for="reset-admin-password">Tu contraseña de administrador</label><input id="reset-admin-password" class="form-control" type="password" autocomplete="current-password" required maxlength="72"></div>
+        <div class="mb-3"><label class="form-label" for="reset-new-password">Nueva contraseña del usuario</label><input id="reset-new-password" class="form-control" type="password" autocomplete="new-password" required minlength="12" maxlength="72"></div>
+        <div class="mb-3"><label class="form-label" for="reset-confirm-password">Confirmar nueva contraseña</label><input id="reset-confirm-password" class="form-control" type="password" autocomplete="new-password" required minlength="12" maxlength="72"></div>
+        <p id="reset-password-message" role="status"></p>
+        <div class="actions"><button class="btn btn-primary" type="submit">Restablecer contraseña</button><button id="reset-password-cancel" class="btn btn-outline-secondary" type="button">Cancelar</button></div>
+    </form>
 </dialog>
 </body>
 </html>

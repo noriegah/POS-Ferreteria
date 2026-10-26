@@ -78,3 +78,7 @@ La réplica y el balanceo de Ventas están implementados. Clima tiene cliente e 
 Los cambios administrativos viven en SaleChanges.php; Customers.php mantiene el cliente. StockReturns.php devuelve el descuento original en Inventario. Las migraciones 006–008 añaden estados, auditoría, clientes, pagos y cambios de acceso. Ver base-datos.md y roles-permisos.md para explicar las relaciones.
 
 Payments.php coordina estados y PayPalClient.php contiene el cliente REST Sandbox. frontend/js/paypal-checkout.js controla la ventana de pago. scripts/configure-paypal.ps1 y configure-weather.ps1 validan credenciales antes de escribirlas en .env.
+
+## Cuadre de caja
+
+La lógica está en `services/ventas-service/src/CashRegister.php`, la pantalla en `frontend/js/cash-register.js`, el SQL aditivo en `db-master/migrations/011-cuadre-caja.sql` y la verificación en `tests/cash-register-integration.php` con `scripts/test-cash-register.ps1`. Guía: `docs/cuadre-caja.md`.

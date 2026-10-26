@@ -20,9 +20,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     header('Allow: GET'); respond(405,['error'=>'Método no permitido']);
 }
 try {
-    // Ventas verifica el JWT y el rol actual antes de entregar cualquier dato.
+    if($path==='/clima') {
+        ReportClient::authorizeWeather($_SERVER['HTTP_AUTHORIZATION'] ?? '');
+        respond(200,['clima'=>WeatherClient::current()]);
+    }
+    // Ventas verifica el JWT y el rol actual antes de entregar reportes.
     $data = ReportClient::fetch($_GET, $_SERVER['HTTP_AUTHORIZATION'] ?? '', $path === '/pdf');
-    if($path==='/clima') respond(200,['clima'=>WeatherClient::current()]);
     if ($path === '/pdf') {
         $pdf = ReportPdf::generate($data);
         $filename = 'reporte-ventas-'.$data['periodo']['desde'].'-'.$data['periodo']['hasta'].'.pdf';

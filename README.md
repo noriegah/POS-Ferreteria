@@ -44,6 +44,7 @@ Clientes, ventas, detalles, pagos y eventos están relacionados en ventas_db. Lo
 - [Estructura de carpetas](docs/estructura.md)
 - [Arquitectura](docs/arquitectura.md)
 - [Base de datos](docs/base-datos.md)
+- [Cuadre de caja](docs/cuadre-caja.md)
 - [Roles y permisos](docs/roles-permisos.md)
 - [Replicación](docs/replicacion.md)
 - [Balanceo](docs/balanceo.md)
@@ -58,6 +59,7 @@ Adminer es opcional: docker compose --profile tools up -d adminer. Abre http://l
 ## Validación
 
 ```powershell
+./scripts/test-cash-register.ps1
 ./scripts/test-paypal.ps1
 ./scripts/test-sale-changes.ps1
 ./scripts/test-ventas.ps1
@@ -70,10 +72,14 @@ Se verificaron 42 comprobaciones del nuevo bloque administrativo, 79 de Ventas y
 
 ## Límites y preparación externa
 
-QR es la API externa ya integrada. El cliente de OpenWeatherMap y su interfaz están preparados, pero falta una clave propia y validar la consulta real. PayPal Sandbox está implementado con reserva, confirmación y reembolso; falta configurarlo y probarlo contra una cuenta propia. Ver docs/integraciones/pagos.md y scripts/configure-paypal.ps1. El documento no se considera entrega completa hasta cerrar estas funciones, publicar en GitHub y desplegar en el VPS Hostinger. El enunciado menciona hosting gratuito, por lo que se debe confirmar la aceptación del VPS.
+QR es la API externa ya integrada. El cliente de OpenWeatherMap y su interfaz están preparados, pero falta una clave propia y validar la consulta real. PayPal Sandbox está implementado con reserva, confirmación y reembolso; el usuario confirmó una compra y anulación reales de Sandbox con su cuenta de prueba. Ver docs/integraciones/pagos.md y scripts/configure-paypal.ps1. El documento no se considera entrega completa hasta cerrar estas funciones, publicar en GitHub y desplegar en el VPS Hostinger. El enunciado menciona hosting gratuito, por lo que se debe confirmar la aceptación del VPS.
 
 .env, secrets, respaldos, datos subidos y dependencias PHP generadas se excluyen de Git. Bootstrap, AdminHMD y Chart.js se conservan en frontend/vendor con sus créditos para ejecutar la interfaz sin CDN. Antes del VPS se deben trasladar base e imágenes y configurar dominio, TLS y respaldo externo. No se publican los puertos SQL.
 
 ## Pago Sandbox preparado
 
-Caja mantiene efectivo y añade PayPal Sandbox. Los importes de venta y factura siguen en Q; solo PayPal recibe USD de prueba con tasa académica visible y guardada en cada pago. Sin credenciales propias la opción aparece deshabilitada. El bloque tiene pruebas locales con respuestas controladas; la validación real está pendiente. Para clima se incluye scripts/configure-weather.ps1.
+Caja mantiene efectivo y añade PayPal Sandbox. Los importes de venta y factura siguen en Q; solo PayPal recibe USD de prueba con tasa académica visible y guardada en cada pago. Sin credenciales propias la opción aparece deshabilitada. El bloque tiene pruebas locales con respuestas controladas; el usuario confirmó que la compra y anulación de Sandbox funcionan. Para clima se incluye scripts/configure-weather.ps1.
+
+## Cuadre de caja
+
+Antes de cobrar efectivo, abre tu turno en Cuadre de caja e indica el fondo inicial. Al terminar, registra el efectivo contado y la observación si existe diferencia. El historial conserva los cierres y sus movimientos. PayPal queda fuera del efectivo. Las devoluciones salen del turno abierto del administrador que anula. Las ventas anteriores a esta función no se incorporan a un turno nuevo. Ver docs/cuadre-caja.md. Se verificaron 36 comprobaciones REST del cuadre y apertura/cierre desde la interfaz.

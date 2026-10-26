@@ -6,6 +6,7 @@ const SalesHistoryView = (() => {
     let api, getUser, money, openInvoice, closeInvoice, applied = null, request = 0, page = 1;
     let sellers = new Map(), changingSale = null, changeAction = null;
     function clear() {
+        el('sale-detail-dialog').close();
         request++; applied = null; sellers.clear(); changingSale=null; el('sale-change-dialog').close();
         el('history-body').replaceChildren(); el('history-results').hidden = true;
         el('history-status').textContent = ''; el('history-filters').reset();
@@ -68,6 +69,11 @@ const SalesHistoryView = (() => {
                 });
                 button.disabled=sale.estado==='pendiente_pago' || (sale.facturable!==undefined && Number(sale.facturable)!==1);
                 action.append(button);
+                if(getUser().rol==='administrador') {
+                    const detail=document.createElement('button'); detail.type='button';
+                    detail.className='btn btn-outline-secondary btn-sm ms-2'; detail.textContent='Ver detalle';
+                    detail.addEventListener('click',()=>showDetail(sale.id)); action.append(detail);
+                }
                 if(sale.estado==='pendiente_pago') {
                     const pay=document.createElement('button');pay.type='button';pay.className='btn btn-primary btn-sm ms-2';pay.textContent='Continuar pago';
                     pay.addEventListener('click',()=>PayPalCheckout.open(sale.id));action.append(pay);
@@ -99,6 +105,37 @@ const SalesHistoryView = (() => {
             if(ticket===request) el('history-filter-button').disabled = false;
         }
     }
+    // Solo consulta el registro guardado; no permite cambiar los motivos anteriores.
+    async function showDetail(id) {
+        const ticket=request;
+        el('history-status').textContent='';
+        try {
+            const [data, history]=await Promise.all([api(`ventas/${id}`),api(`ventas/${id}/eventos`)]);
+            if(ticket!==request || getUser().rol!=='administrador') return;
+            const sale=data.venta;
+            el('sale-detail-title').textContent=`Detalle FAC-${String(id).padStart(6,'0')}`;
+            el('sale-detail-summary').textContent=`Estado: ${sale.estado} · Total: ${money(sale.total)}`;
+            const body=el('sale-detail-events'); body.replaceChildren();
+            const labels={solicitar_anulacion:'Solicitud de anulación',anular:'Anulación completada',editar_comprador:'Corrección del comprador',solicitar_cancelacion:'Solicitud de cancelación sin cobro',cancelar_pago_pendiente:'Venta pendiente cancelada',solicitar_cobro:'Solicitud de pago PayPal',pago_confirmado:'Pago confirmado'};
+            // La base guarda fechas UTC. Aquí se muestran en la hora de Guatemala.
+            const date=value=>value ? new Intl.DateTimeFormat('es-GT',{timeZone:'America/Guatemala',dateStyle:'medium',timeStyle:'short'}).format(new Date(value.replace(' ','T')+'Z')) : 'Pendiente';
+            el('sale-detail-cancellation').hidden=!sale.anulacion_motivo;
+            el('sale-detail-reason').textContent=sale.anulacion_motivo || '';
+            el('sale-detail-admin').textContent=sellers.get(String(sale.anulacion_usuario_id)) || `Usuario #${sale.anulacion_usuario_id}`;
+            el('sale-detail-date').textContent=date(sale.anulada_en);
+            for(const event of history.eventos) {
+                const row=document.createElement('tr');
+                cell(row,date(event.creado_en));
+                cell(row,labels[event.accion] || event.accion);
+                cell(row,sellers.get(String(event.usuario_id)) || `Usuario #${event.usuario_id}`);
+                cell(row,event.motivo); body.append(row);
+            }
+            if(!history.eventos.length) {
+                const row=document.createElement('tr');cell(row,'Esta venta no tiene cambios registrados.').colSpan=4;body.append(row);
+            }
+            el('sale-detail-dialog').showModal();
+        } catch(error) {if(ticket===request) el('history-status').textContent=error.message;}
+    }
     async function showChange(id, action) {
         el('history-status').textContent='';
         try {
@@ -128,6 +165,7 @@ const SalesHistoryView = (() => {
     }
     function init(options) {
         ({api,getUser,money,openInvoice,closeInvoice} = options); setDates();
+        el('sale-detail-close').addEventListener('click',()=>el('sale-detail-dialog').close());
         el('sale-change-close').addEventListener('click',()=>el('sale-change-dialog').close());
         el('sale-change-form').addEventListener('submit',saveChange);
         el('history-filters').addEventListener('submit',event=>{event.preventDefault();load(true);});

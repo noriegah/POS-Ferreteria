@@ -11,6 +11,7 @@ final class WeatherClient
             throw new RuntimeException('Respuesta meteorológica inválida');
         }
         return ['disponible'=>true,'ciudad'=>mb_substr($data['name'],0,100),'temperatura'=>round((float)$data['main']['temp'],1),
+            'codigo'=>(int)($data['weather'][0]['id'] ?? 0),
             'humedad'=>(int)$data['main']['humidity'],'descripcion'=>mb_substr($data['weather'][0]['description'],0,150),
             'observado_en'=>gmdate('c',$data['dt']),'fuente'=>'OpenWeatherMap'];
     }
@@ -19,9 +20,9 @@ final class WeatherClient
     {
         $key=getenv('OPENWEATHER_API_KEY');
         if(!$key) return ['disponible'=>false,'mensaje'=>'Clima pendiente de configurar OpenWeatherMap'];
-        $lat=getenv('WEATHER_LAT') ?: '14.6349'; $lon=getenv('WEATHER_LON') ?: '-90.5069';
+        $lat=getenv('WEATHER_LAT') ?: '15.02681'; $lon=getenv('WEATHER_LON') ?: '-90.87815';
         if(!is_numeric($lat) || !is_numeric($lon) || abs((float)$lat)>90 || abs((float)$lon)>180) return ['disponible'=>false,'mensaje'=>'Revisa la ubicación del clima'];
-        $cache=sys_get_temp_dir().'/ferresync-weather-'.hash('sha256',$lat.','.$lon.','.$key).'.json';
+        $cache=sys_get_temp_dir().'/ferresync-weather-'.hash('sha256','v2,'. $lat.','.$lon.','.$key).'.json';
         // Diez minutos de caché reducen llamadas al proveedor. No se inventan datos si falla.
         if(is_file($cache) && filemtime($cache)>time()-600) {
             $saved=json_decode((string)file_get_contents($cache),true);
@@ -35,9 +36,12 @@ final class WeatherClient
             }]);
         $ok=curl_exec($curl); $status=curl_getinfo($curl,CURLINFO_HTTP_CODE); curl_close($curl);
         try {
-            if($ok===false || $status!==200) throw new RuntimeException('Proveedor no disponible');
+            if($ok===false) return ['disponible'=>false,'mensaje'=>'No se pudo conectar con OpenWeatherMap. Revisa Internet, DNS o certificados del contenedor.'];
+            if($status===401) return ['disponible'=>false,'mensaje'=>'OpenWeatherMap rechazó la clave (HTTP 401). Comprueba la clave y su activación en tu cuenta.'];
+            if($status===429) return ['disponible'=>false,'mensaje'=>'OpenWeatherMap alcanzó el límite de consultas (HTTP 429). Reintenta más tarde.'];
+            if($status!==200) return ['disponible'=>false,'mensaje'=>'OpenWeatherMap respondió con HTTP '.(int)$status.'. No se pudo consultar el clima.'];
             $data=self::normalize(json_decode($raw,true,32,JSON_THROW_ON_ERROR));
             file_put_contents($cache,json_encode($data,JSON_THROW_ON_ERROR),LOCK_EX); return $data;
-        } catch(Throwable $error) { return ['disponible'=>false,'mensaje'=>'No se pudo consultar el clima. Reintenta más tarde']; }
+        } catch(Throwable $error) { return ['disponible'=>false,'mensaje'=>'No se pudo procesar la respuesta del clima. Revisa las dependencias PHP y el formato del proveedor']; }
     }
 }

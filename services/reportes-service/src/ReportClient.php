@@ -9,6 +9,25 @@ final class ReportError extends RuntimeException
 
 final class ReportClient
 {
+    // El clima solo requiere una sesión activa; no consulta estadísticas de Ventas.
+    public static function authorizeWeather(string $header): void
+    {
+        if(!preg_match('/^Bearer [A-Za-z0-9_.-]+$/iD',$header) || strlen($header)>8192) throw new ReportError(401,'Se requiere un token Bearer válido');
+        $base=getenv('AUTH_URL');
+        if(!$base) throw new ReportError(503,'Falta configurar Autenticación');
+        $curl=curl_init(rtrim($base,'/').'/verify');
+        curl_setopt_array($curl,[CURLOPT_POST=>true,CURLOPT_POSTFIELDS=>'',CURLOPT_RETURNTRANSFER=>true,
+            CURLOPT_HTTPHEADER=>['Accept: application/json','Authorization: '.$header],
+            CURLOPT_CONNECTTIMEOUT=>2,CURLOPT_TIMEOUT=>5,CURLOPT_FOLLOWLOCATION=>false]);
+        $raw=curl_exec($curl);$status=curl_getinfo($curl,CURLINFO_HTTP_CODE);curl_close($curl);
+        if($raw===false) throw new ReportError(503,'Autenticación no está disponible');
+        if($status===401 || $status===403) throw new ReportError($status,'Sesión no válida para consultar el clima');
+        if($status!==200) throw new ReportError(503,'No se pudo verificar la sesión');
+        try {$data=json_decode($raw,true,16,JSON_THROW_ON_ERROR);}
+        catch(JsonException $error) {throw new ReportError(503,'Respuesta de autenticación inválida');}
+        if(($data['valid'] ?? null)!==true || !in_array($data['user']['rol'] ?? null,['administrador','cajero'],true)) throw new ReportError(403,'Permisos insuficientes');
+    }
+
     public static function fetch(array $filters, string $header, bool $full = false): array
     {
         if (!preg_match('/^Bearer [A-Za-z0-9_.-]+$/iD', $header) || strlen($header)>8192) {

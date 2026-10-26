@@ -1,0 +1,6 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer"><title>Validación de factura</title><link rel="stylesheet" href="/invoice-validation.css"><script src="/js/invoice-validation.js?v=1" defer></script></head>
+<body><main><header><p class="brand">Servicios Hanona S. A.</p><h1>Validación de factura</h1><p>Consulta del comprobante registrado en nuestro sistema.</p></header>
+<p id="validation-status" class="status" role="status" aria-live="polite">Consultando factura…</p>
+<section id="validation-detail" hidden><h2 id="validation-number"></h2><dl><dt>Emisor</dt><dd id="validation-issuer"></dd><dt>NIT del emisor</dt><dd id="validation-nit"></dd><dt>Dirección</dt><dd id="validation-address"></dd><dt>Fecha de emisión</dt><dd id="validation-date"></dd><dt>Estado</dt><dd id="validation-state"></dd><dt>Total</dt><dd id="validation-total" class="total"></dd></dl><p id="validation-checked"></p></section>
+<button id="validation-retry" type="button" hidden>Volver a consultar</button><footer>La consulta confirma el registro y estado del comprobante en nuestro sistema. No corresponde a una certificación FEL.</footer></main></body></html>

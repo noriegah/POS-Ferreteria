@@ -44,15 +44,22 @@ try {
             || strlen($body->email) > 254 || !filter_var(trim($body->email), FILTER_VALIDATE_EMAIL)
             || $body->password === '' || strlen($body->password) > 72) { throw new HttpError(422, 'Email o contraseña inválidos'); }
         $db = Database::connect();
-        $query = $db->prepare('SELECT id,nombre,email,password_hash,rol,activo FROM usuarios WHERE email = ? LIMIT 1');
+        $query = $db->prepare('SELECT id,nombre,email,password_hash,rol,activo,session_version FROM usuarios WHERE email = ? LIMIT 1');
         $query->execute([strtolower(trim($body->email))]); $user = $query->fetch();
         // También verifica un hash cuando el correo no existe, para reducir diferencias de tiempo en la respuesta.
         $hash = $user ? $user['password_hash'] : '$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.';
         $valid = password_verify($body->password, $hash);
         if (!$user || !$valid || !(bool)$user['activo']) { throw new HttpError(401, 'Credenciales incorrectas'); }
         $token = TokenService::issue($user);
-        unset($user['password_hash'], $user['activo']); $user['id'] = (string)$user['id'];
+        unset($user['password_hash'], $user['activo'], $user['session_version']); $user['id'] = (string)$user['id'];
         respond(200, ['access_token' => $token, 'token_type' => 'Bearer', 'expires_in' => (int)getenv('JWT_TTL'), 'user' => $user]);
+    }
+    // Renueva únicamente un JWT todavía válido de una cuenta activa.
+    if($path==='/refresh') {
+        if($method!=='POST') {header('Allow: POST');throw new HttpError(405,'Método no permitido');}
+        $account=Users::current();
+        $account['session_version']=$account['_session_version'];
+        respond(200,['access_token'=>TokenService::issue($account),'token_type'=>'Bearer','expires_in'=>(int)getenv('JWT_TTL')]);
     }
     // /verify recibe el mismo Bearer que envían el navegador o los otros servicios.
     if ($path === '/verify') {
@@ -63,6 +70,19 @@ try {
     if ($path === '/me') {
         if ($method !== 'GET') { header('Allow: GET'); throw new HttpError(405, 'Método no permitido'); }
         respond(200, ['user'=>Users::current()]);
+    }
+    // Solo un administrador vigente puede restablecer contraseñas.
+    if(preg_match('#^/users/([1-9][0-9]{0,19})/password$#D',$path,$account)) {
+        if($method!=='POST') {header('Allow: POST'); throw new HttpError(405,'Método no permitido');}
+        $actor=Users::administrator();
+        if(strtolower(trim(explode(';',$_SERVER['CONTENT_TYPE'] ?? '')[0]))!=='application/json') throw new HttpError(415,'Se requiere application/json');
+        $raw=file_get_contents('php://input',false,null,0,8193);
+        if($raw===false || strlen($raw)>8192) throw new HttpError(413,'Solicitud demasiado grande');
+        try {$data=json_decode($raw,false,16,JSON_THROW_ON_ERROR);}
+        catch(JsonException $error) {throw new HttpError(400,'JSON inválido');}
+        if(!is_object($data)) throw new HttpError(422,'Se requiere un objeto JSON');
+        Users::resetPassword($account[1],$data,$actor);
+        respond(200,['mensaje'=>'Contraseña restablecida. Las sesiones anteriores de la cuenta quedaron invalidadas.']);
     }
     // El rol vigente se verifica antes de aceptar un cambio de acceso.
     if(preg_match('#^/users/([1-9][0-9]{0,19})$#D',$path,$account)) {

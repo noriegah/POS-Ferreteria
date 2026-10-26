@@ -32,7 +32,7 @@ final class TokenService
 // iss: emisor; aud: destinatario; sub: usuario; role: rol. iat/nbf/exp son fechas en segundos; jti identifica el token.
         return JWT::encode([
             'iss' => self::setting('JWT_ISSUER'), 'aud' => self::setting('JWT_AUDIENCE'),
-            'sub' => (string)$user['id'], 'role' => $user['rol'],
+            'sub' => (string)$user['id'], 'role' => $user['rol'], 'sv' => (int)($user['session_version'] ?? 0),
             'iat' => $now, 'nbf' => $now, 'exp' => $now + $ttl,
             'jti' => bin2hex(random_bytes(16)),
         ], $key, 'RS256');

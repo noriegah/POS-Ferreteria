@@ -42,6 +42,12 @@ function stock(int $id): string {
     $q = $db->prepare('SELECT stock FROM productos WHERE id=?'); $q->execute([$id]); return $q->fetchColumn();
 }
 try {
+// El efectivo exige ahora un turno abierto para cada cuenta temporal.
+foreach(['admin','cashier','other'] as $key) {
+    [$cashCode]=api('ventas/cajas','POST',$tokens[$key],['fondo'=>'500.00']);
+    if($cashCode!==201) throw new RuntimeException('No se pudo abrir el turno temporal');
+}
+
     [$status,$body] = api('inventario/categorias','POST',$tokens['admin'],['nombre'=>$tag]);
     check($status === 201, 'Temporary category'); $category = (int)$body['categoria']['id'];
     foreach (['A'=>'12.50', 'B'=>'0.10'] as $suffix=>$price) {

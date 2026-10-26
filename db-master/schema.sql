@@ -1,4 +1,9 @@
 /*M!999999\- enable the sandbox mode */ 
+-- MariaDB dump 10.19  Distrib 10.11.19-MariaDB, for debian-linux-gnu (x86_64)
+--
+-- Host: localhost    Database: auth_db
+-- ------------------------------------------------------
+-- Server version	10.11.19-MariaDB-ubu2204-log
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -11,9 +16,18 @@
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
+--
+-- Current Database: `auth_db`
+--
+
 CREATE DATABASE /*!32312 IF NOT EXISTS*/ `auth_db` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci */;
 
 USE `auth_db`;
+
+--
+-- Table structure for table `usuario_eventos`
+--
+
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `usuario_eventos` (
@@ -30,8 +44,13 @@ CREATE TABLE `usuario_eventos` (
   KEY `administrador_id` (`administrador_id`),
   CONSTRAINT `usuario_eventos_ibfk_1` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE,
   CONSTRAINT `usuario_eventos_ibfk_2` FOREIGN KEY (`administrador_id`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `usuarios`
+--
+
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `usuarios` (
@@ -46,12 +65,21 @@ CREATE TABLE `usuarios` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_usuarios_email` (`email`),
   CONSTRAINT `ck_usuarios_activo` CHECK (`activo` in (0,1))
-) ENGINE=InnoDB AUTO_INCREMENT=184 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=206 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Current Database: `inventario_db`
+--
 
 CREATE DATABASE /*!32312 IF NOT EXISTS*/ `inventario_db` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci */;
 
 USE `inventario_db`;
+
+--
+-- Table structure for table `categorias`
+--
+
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `categorias` (
@@ -63,8 +91,13 @@ CREATE TABLE `categorias` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_categorias_nombre` (`nombre`),
   CONSTRAINT `ck_categorias_activo` CHECK (`activo` in (0,1))
-) ENGINE=InnoDB AUTO_INCREMENT=50 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=56 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `descuentos_venta`
+--
+
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `descuentos_venta` (
@@ -76,6 +109,11 @@ CREATE TABLE `descuentos_venta` (
   PRIMARY KEY (`referencia`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `devoluciones_venta`
+--
+
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `devoluciones_venta` (
@@ -87,6 +125,11 @@ CREATE TABLE `devoluciones_venta` (
   CONSTRAINT `devoluciones_venta_ibfk_1` FOREIGN KEY (`referencia`) REFERENCES `descuentos_venta` (`referencia`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `movimientos_stock`
+--
+
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `movimientos_stock` (
@@ -104,8 +147,13 @@ CREATE TABLE `movimientos_stock` (
   CONSTRAINT `ck_movimientos_cantidad` CHECK (`cantidad` <> 0),
   CONSTRAINT `ck_movimientos_stock` CHECK (`stock_anterior` >= 0 and `stock_nuevo` >= 0),
   CONSTRAINT `ck_movimientos_balance` CHECK (`stock_nuevo` = `stock_anterior` + `cantidad`)
-) ENGINE=InnoDB AUTO_INCREMENT=313 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=353 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `productos`
+--
+
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `productos` (
@@ -130,12 +178,65 @@ CREATE TABLE `productos` (
   CONSTRAINT `ck_productos_stock` CHECK (`stock` >= 0),
   CONSTRAINT `ck_productos_stock_minimo` CHECK (`stock_minimo` >= 0),
   CONSTRAINT `ck_productos_activo` CHECK (`activo` in (0,1))
-) ENGINE=InnoDB AUTO_INCREMENT=100 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=109 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Current Database: `ventas_db`
+--
 
 CREATE DATABASE /*!32312 IF NOT EXISTS*/ `ventas_db` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci */;
 
 USE `ventas_db`;
+
+--
+-- Table structure for table `caja_movimientos`
+--
+
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `caja_movimientos` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `caja_id` bigint(20) unsigned NOT NULL,
+  `venta_id` bigint(20) unsigned NOT NULL,
+  `tipo` enum('venta','devolucion') NOT NULL,
+  `importe` decimal(12,2) NOT NULL,
+  `creado_en` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_caja_venta_tipo` (`venta_id`,`tipo`),
+  KEY `fk_movimiento_caja` (`caja_id`),
+  CONSTRAINT `fk_movimiento_caja` FOREIGN KEY (`caja_id`) REFERENCES `cajas` (`id`),
+  CONSTRAINT `fk_movimiento_venta` FOREIGN KEY (`venta_id`) REFERENCES `ventas` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `cajas`
+--
+
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `cajas` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `usuario_id` bigint(20) unsigned NOT NULL,
+  `fondo` decimal(12,2) NOT NULL,
+  `estado` enum('abierta','cerrada') NOT NULL DEFAULT 'abierta',
+  `abierta_en` datetime NOT NULL DEFAULT current_timestamp(),
+  `cerrada_en` datetime DEFAULT NULL,
+  `contado` decimal(12,2) DEFAULT NULL,
+  `esperado_cierre` decimal(12,2) DEFAULT NULL,
+  `diferencia` decimal(12,2) DEFAULT NULL,
+  `observaciones` varchar(255) DEFAULT NULL,
+  `usuario_abierto` bigint(20) unsigned GENERATED ALWAYS AS (case when `estado` = 'abierta' then `usuario_id` else NULL end) STORED,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_caja_abierta` (`usuario_abierto`)
+) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `clientes`
+--
+
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `clientes` (
@@ -147,8 +248,13 @@ CREATE TABLE `clientes` (
   `actualizado_en` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`id`),
   UNIQUE KEY `nit` (`nit`)
-) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=26 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `detalle_ventas`
+--
+
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `detalle_ventas` (
@@ -165,8 +271,13 @@ CREATE TABLE `detalle_ventas` (
   UNIQUE KEY `venta_id` (`venta_id`,`producto_id`),
   CONSTRAINT `detalle_ventas_ibfk_1` FOREIGN KEY (`venta_id`) REFERENCES `ventas` (`id`),
   CONSTRAINT `CONSTRAINT_1` CHECK (`cantidad` > 0 and `precio` >= 0 and `subtotal` >= 0)
-) ENGINE=InnoDB AUTO_INCREMENT=392 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=412 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `pagos`
+--
+
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `pagos` (
@@ -193,8 +304,13 @@ CREATE TABLE `pagos` (
   UNIQUE KEY `uq_pago_reembolso` (`reembolso_externo`),
   CONSTRAINT `pagos_ibfk_1` FOREIGN KEY (`venta_id`) REFERENCES `ventas` (`id`) ON DELETE CASCADE,
   CONSTRAINT `CONSTRAINT_1` CHECK (`importe` >= 0)
-) ENGINE=InnoDB AUTO_INCREMENT=65 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=86 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `venta_eventos`
+--
+
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `venta_eventos` (
@@ -209,8 +325,13 @@ CREATE TABLE `venta_eventos` (
   PRIMARY KEY (`id`),
   KEY `venta_id` (`venta_id`,`creado_en`),
   CONSTRAINT `venta_eventos_ibfk_1` FOREIGN KEY (`venta_id`) REFERENCES `ventas` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=38 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=57 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `ventas`
+--
+
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `ventas` (
@@ -231,17 +352,16 @@ CREATE TABLE `ventas` (
   `cliente_id` bigint(20) unsigned DEFAULT NULL,
   `metodo_pago` enum('efectivo','tarjeta') NOT NULL DEFAULT 'efectivo',
   `iva` decimal(12,2) DEFAULT NULL,
+  `caja_devolucion_id` bigint(20) unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `referencia` (`referencia`),
   KEY `fk_ventas_cliente` (`cliente_id`),
+  KEY `fk_venta_caja_devolucion` (`caja_devolucion_id`),
+  CONSTRAINT `fk_venta_caja_devolucion` FOREIGN KEY (`caja_devolucion_id`) REFERENCES `cajas` (`id`),
   CONSTRAINT `fk_ventas_cliente` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id`),
   CONSTRAINT `CONSTRAINT_1` CHECK (`total` is null or `total` >= 0)
-) ENGINE=InnoDB AUTO_INCREMENT=594 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=634 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
-CREATE DATABASE /*!32312 IF NOT EXISTS*/ `reportes_db` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci */;
-
-USE `reportes_db`;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -252,3 +372,4 @@ USE `reportes_db`;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
+-- Dump completed on 2026-10-23 19:41:24

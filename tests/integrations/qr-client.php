@@ -12,7 +12,7 @@ function check(bool $ok, string $message): void {
 }
 try {
     $text = QrCodeClient::content($invoice);
-    check(!str_contains($text, 'Bearer') && !str_contains($text, 'usuario'), 'QR contains only invoice identifier and reference');
+    check(str_contains($text, '/validar-factura.html?') && str_contains($text, 'firma=') && !str_contains($text, 'Bearer') && !str_contains($text, 'comprador'), 'QR contains signed validation URL without personal data');
     $png = (new QrCodeClient($folder))->image($invoice);
     $size = getimagesizefromstring($png);
     check($size !== false && $size[0] === 240 && $size[1] === 240 && $size[2] === IMAGETYPE_PNG, 'Real provider returns 240px PNG');

@@ -72,3 +72,9 @@ Como la verificación REST exige usuarios existentes, el script del CRUD ahora c
 
 
 Validación local: pruebas de API/JWT y las 38 comprobaciones del CRUD aprobadas; también se comprobó el rechazo 503 si la URL de Autenticación no responde. En el navegador se verificaron la visibilidad del formulario y listado del administrador, la navegación a Usuarios y su ocultación al cajero. El envío de registros se comprobó por HTTP en las pruebas automáticas. Se eliminaron las cuentas y registros temporales. Los datos del proyecto se conservaron.
+
+## Restablecer una contraseña olvidada
+
+Solo el administrador puede usar Usuarios → Restablecer contraseña. Debe confirmar su propia contraseña y escribir dos veces la nueva (12–72 bytes). La contraseña anterior del usuario no se necesita. La operación guarda un hash bcrypt y registra cuenta, administrador y fecha sin guardar claves en la auditoría. Invalida todos los JWT previos de la cuenta. El administrador también puede restablecer su propia contraseña si conoce la actual; esto cierra su sesión. No se añade cambio de contraseña para cajeros ni recuperación por correo.
+
+Aplicar scripts/migrate.ps1 y reconstruir auth-service antes de usar esta función. La migración 012 es aditiva y permite volver a ejecutarla. Si el único administrador olvidó su clave, esta pantalla no puede usarse sin una sesión administrativa válida.

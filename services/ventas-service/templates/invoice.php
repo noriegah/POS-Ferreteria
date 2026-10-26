@@ -1,33 +1,34 @@
 <!DOCTYPE html>
 <html lang="es"><head><meta charset="UTF-8"><style>
-/* Plantilla de impresión: tablas y medidas sencillas, independientes de Bootstrap. */
-@page { margin: 35px 38px 48px; }
-body { font-family: 'DejaVu Sans',sans-serif; font-size: 10px; color: #172e36; }
-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-td,th { vertical-align: top; overflow-wrap: break-word; }
-.header { border-bottom: 3px solid #17695f; padding-bottom: 16px; margin-bottom: 20px; }
-.brand { font-size: 23px; font-weight: bold; color: #15564e; margin: 0 0 8px; }
-.right { text-align: right; }
-.muted { color: #687b7f; font-size: 9px; }
-.title { font-size: 18px; font-weight: bold; margin-bottom: 8px; }
-.box { border: 1px solid #ccd9d5; padding: 12px; margin-bottom: 18px; }
-.box p { margin: 4px 0; }
-.label { font-size: 9px; color: #58706c; font-weight: bold; margin-bottom: 8px; }
-.items th { background: #eaf1ee; padding: 10px 7px; border-bottom: 1px solid #acbeb8; font-size: 9px; }
-.items td { padding: 10px 7px; border-bottom: 1px solid #dbe3df; }
-.items thead { display: table-header-group; }
-.items tr { page-break-inside: avoid; }
-.summary { margin-top: 22px; page-break-inside: avoid; }
-.totals td { padding: 7px; }
-.total { background: #eaf1ee; font-size: 14px; font-weight: bold; }
-.reference { font-size: 8px; color: #566d68; word-wrap: break-word; }
-.note { border-top: 1px solid #d4dfda; margin-top: 24px; padding-top: 10px; font-size: 9px; color: #647771; }
+@page { margin: 32px 34px 46px; }
+body { font-family: 'DejaVu Sans',sans-serif; font-size: 9px; color: #202c39; }
+table { width:100%; border-collapse:collapse; table-layout:fixed; }
+td,th { vertical-align:top; overflow-wrap:break-word; }
+.header { border-top:4px solid #11628c; border-bottom:1px solid #9ca9b5; margin-bottom:16px; }
+.header td { padding:14px 8px; }
+.brand {font-size:17px; font-weight:bold; color:#11628c; margin-bottom:7px;}
+.right {text-align:right;}
+.muted {color:#617080;font-size:8px;}
+.title {font-size:21px;font-weight:bold;color:#11628c;margin-bottom:9px;}
+.box {border:1px solid #bfc8d1; padding:11px 12px; margin-bottom:17px; background:#f7f9fb;}
+.box p {margin:5px 0;}
+.label {font-size:8px; color:#11628c;font-weight:bold;margin-bottom:8px;}
+.items th {background:#eaf0f5;color:#24516f;padding:9px 7px;border:1px solid #bdc8d2;font-size:8px;}
+.items td {padding:10px 7px;border:1px solid #d4dce3;}
+.items thead {display:table-header-group;}
+.items tr {page-break-inside:avoid;}
+.summary {margin-top:20px;page-break-inside:avoid;}
+.totals td {padding:9px 8px;border-bottom:1px solid #d4dce3;}
+.total {background:#eaf0f5;color:#125c85;font-size:13px;font-weight:bold;}
+.reference {font-size:7px;color:#657383;word-wrap:break-word;}
+.note {border-top:1px solid #bdc8d2;margin-top:20px;padding-top:9px;font-size:8px;color:#657383;}
+a {color:#11628c;text-decoration:none;}
 </style></head><body>
 <table class="header"><tr><td style="width:58%">
     <div class="brand"><?= $escape($issuer['nombre']) ?></div>
     <?php if($issuer['direccion']): ?><div><?= $escape($issuer['direccion']) ?></div><?php endif ?>
     <?php if($issuer['nit']): ?><div>NIT: <?= $escape($issuer['nit']) ?></div><?php endif ?>
-    <div class="muted">Sistema de punto de venta · Proyecto universitario</div>
+
 </td><td class="right"><div class="title">FACTURA</div>
     <strong><?= $escape($invoice['numero']) ?></strong><br>
     Fecha: <?= $escape($date) ?><br>Moneda: GTQ - Quetzales<br>Pago: <?= ($invoice['metodo_pago'] ?? 'efectivo')==='tarjeta' ? 'PayPal Sandbox' : 'Efectivo' ?>
@@ -49,12 +50,12 @@ td,th { vertical-align: top; overflow-wrap: break-word; }
 </tr><?php endforeach ?>
 </tbody></table>
 <table class="summary"><tr><td style="width:47%; padding-right:22px">
-    <?php if($qr): ?><img src="<?= $qr ?>" width="122" height="122" alt="QR de referencia"><br><?php else: ?><p>QR no disponible</p><?php endif ?>
-    <span class="reference">Referencia de la factura:<br><?= $escape($invoice['referencia']) ?></span>
+    <?php if($qr): ?><img src="<?= $qr ?>" width="122" height="122" alt="QR para validar la factura"><br><?php else: ?><p>QR no disponible</p><?php endif ?>
+    <span class="reference">Escanea para consultar la validez y el estado de esta factura.<br><a href="<?= $escape(InvoiceValidation::url($invoice['referencia'])) ?>">Validar factura en línea</a><br>Referencia: <?= $escape($invoice['referencia']) ?></span>
 </td><td><table class="totals">
     <tr><td>Subtotal sin IVA</td><td class="right"><?= $money($invoice['subtotal']) ?></td></tr>
     <tr><td>IVA incluido (12 %)</td><td class="right"><?= $money($invoice['iva']) ?></td></tr>
     <tr class="total"><td>TOTAL</td><td class="right"><?= $money($invoice['total']) ?></td></tr>
 </table><p class="muted">Los precios incluyen IVA del 12 %.</p></td></tr></table>
-<div class="note">Comprobante académico del proyecto. Documento sin certificación FEL.</div>
+<div class="note">Gracias por su compra. · Documento sin certificación FEL.</div>
 </body></html>

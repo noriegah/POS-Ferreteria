@@ -1,4 +1,4 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 Push-Location (Split-Path $PSScriptRoot -Parent)
 $tokens = $null
 try {
@@ -58,6 +58,10 @@ foreach($data['ids'] as $id) {
         $file='/app/storage/facturas-qr/'.hash('sha256',$content).'.png'; if(is_file($file)) unlink($file);
     }
     $q=$db->prepare('DELETE d FROM detalle_ventas d JOIN ventas v ON v.id=d.venta_id WHERE v.usuario_id=?'); $q->execute([$id]);
+    $q=$db->prepare('DELETE m FROM caja_movimientos m JOIN ventas v ON v.id=m.venta_id WHERE v.usuario_id=?'); $q->execute([$id]);
+    $q=$db->prepare('DELETE m FROM caja_movimientos m JOIN cajas c ON c.id=m.caja_id WHERE c.usuario_id=?'); $q->execute([$id]);
+    $q=$db->prepare('UPDATE ventas v JOIN cajas c ON c.id=v.caja_devolucion_id SET v.caja_devolucion_id=NULL WHERE c.usuario_id=?'); $q->execute([$id]);
+    $q=$db->prepare('DELETE FROM cajas WHERE usuario_id=?'); $q->execute([$id]);
     $q=$db->prepare('DELETE FROM ventas WHERE usuario_id=?'); $q->execute([$id]);
     foreach($clientIds as $clientId) { $q=$db->prepare('DELETE FROM clientes WHERE id=? AND NOT EXISTS (SELECT 1 FROM ventas WHERE cliente_id=?)'); $q->execute([$clientId,$clientId]); }
 }

@@ -31,12 +31,16 @@ function methods(array $allowed): void {
 }
 try {
     // El JWT identifica al vendedor y la clave interna restringe el descuento al servicio Ventas.
-    if (in_array($path, ['/ventas/descontar','/ventas/devolver'],true)) {
+    if (in_array($path, ['/ventas/descontar','/ventas/devolver','/ventas/liberar-reserva'],true)) {
         methods(['POST']);
         $key = getenv('VENTAS_INTERNAL_KEY');
         if (!$key) { throw new HttpError(503, 'Comunicación de Ventas sin configurar'); }
         if (!hash_equals($key, $_SERVER['HTTP_X_VENTAS_KEY'] ?? '')) { throw new HttpError(403, 'Operación reservada al servicio de Ventas'); }
         $claims = AuthClient::current();
+        if($path==='/ventas/liberar-reserva') {
+            TokenService::requireRole($claims,['administrador','cajero']);
+            respond(200,StockReturns::restore(Database::connect(),Products::body(),$claims->sub,$claims->role!=='administrador'));
+        }
         if($path==='/ventas/devolver') {
             TokenService::requireRole($claims,['administrador']);
             respond(200,StockReturns::restore(Database::connect(),Products::body(),$claims->sub));

@@ -16,8 +16,10 @@ putenv('PAYPAL_CLIENT_ID='.$data['client']);putenv('PAYPAL_CLIENT_SECRET='.$data
 try {(new PayPalClient())->authenticate();echo "Credenciales Sandbox verificadas.\n";}
 catch(Throwable $error){fwrite(STDERR,"No se verificaron las credenciales con PayPal Sandbox.\n");exit(1);}
 '@
-    @{client=$paypalClient;secret=$paypalSecret} | ConvertTo-Json -Compress | docker compose exec -T ventas-service php -r $probe
-    if($LASTEXITCODE -ne 0){throw 'No se modificó .env porque PayPal no aceptó las credenciales'}
+    # Base64 evita que Windows PowerShell cambie las comillas del código PHP.
+    $probeEncoded=[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($probe))
+    @{client=$paypalClient;secret=$paypalSecret} | ConvertTo-Json -Compress | docker compose exec -T ventas-service php -r "eval(base64_decode('$probeEncoded'));"
+    if($LASTEXITCODE -ne 0){throw 'No se modificó .env porque la comprobación no terminó correctamente. Revisa el error anterior'}
     $text=Get-Content -Raw -Encoding UTF8 -LiteralPath '.env'
     foreach($entry in @(@('PAYPAL_CLIENT_ID',$paypalClient),@('PAYPAL_CLIENT_SECRET',$paypalSecret))) {
         $name=$entry[0];$value=$entry[1]

@@ -27,14 +27,42 @@ final class Users
         } catch(Throwable $error) { if($db->inTransaction()) $db->rollBack(); throw $error; }
     }
 
+    // Restablece la clave sin conocer la anterior del usuario. Confirma la del administrador.
+    public static function resetPassword(string $id, object $data, array $actor): void
+    {
+        if(($actor['rol'] ?? null)!=='administrador') throw new HttpError(403,'Permisos insuficientes');
+        if(!is_string($data->password ?? null) || strlen($data->password)<12 || strlen($data->password)>72
+            || str_contains($data->password,"\0") || !is_string($data->confirmacion ?? null)
+            || $data->password!==$data->confirmacion) throw new HttpError(422,'Las contraseñas deben coincidir y tener entre 12 y 72 bytes');
+        if(!is_string($data->admin_password ?? null) || $data->admin_password==='' || strlen($data->admin_password)>72
+            || str_contains($data->admin_password,"\0")) throw new HttpError(422,'Ingresa tu contraseña de administrador');
+        $db=Database::connect(); $db->beginTransaction();
+        try {
+            $q=$db->prepare('SELECT id,rol,activo,password_hash,session_version FROM usuarios WHERE id IN (?,?) ORDER BY id FOR UPDATE');
+            $q->execute([$id,$actor['id']]); $rows=array_column($q->fetchAll(),null,'id');
+            $admin=$rows[$actor['id']] ?? null; $target=$rows[$id] ?? null;
+            if(!$admin || $admin['rol']!=='administrador' || (int)$admin['activo']!==1
+                || (int)$admin['session_version']!==(int)($actor['_session_version'] ?? -1)) throw new HttpError(403,'La sesión del administrador ya no es válida');
+            if(!password_verify($data->admin_password,$admin['password_hash'])) throw new HttpError(403,'Tu contraseña de administrador es incorrecta');
+            if(!$target) throw new HttpError(404,'Usuario no encontrado');
+            if(password_verify($data->password,$target['password_hash'])) throw new HttpError(422,'La nueva contraseña debe ser diferente de la anterior');
+            $hash=password_hash($data->password,PASSWORD_BCRYPT,['cost'=>12]);
+            $q=$db->prepare('UPDATE usuarios SET password_hash=?,session_version=session_version+1 WHERE id=?');
+            $q->execute([$hash,$id]);
+            $q=$db->prepare('INSERT INTO usuario_password_eventos(usuario_id,administrador_id) VALUES (?,?)');
+            $q->execute([$id,$actor['id']]); $db->commit();
+        } catch(Throwable $error) {if($db->inTransaction()) $db->rollBack(); throw $error;}
+    }
+
     // Comprueba el JWT y vuelve a leer el rol y el estado actuales en MariaDB.
     public static function current(): array
     {
         $claims = TokenService::fromRequest();
-        $query = Database::connect()->prepare('SELECT id,nombre,email,rol,activo,creado_en FROM usuarios WHERE id=? AND activo=1');
+        $query = Database::connect()->prepare('SELECT id,nombre,email,rol,activo,creado_en,session_version FROM usuarios WHERE id=? AND activo=1');
         $query->execute([$claims->sub]);
         $user = $query->fetch();
-        if (!$user) { throw new HttpError(401, 'Usuario no disponible'); }
+        if (!$user || (int)$user['session_version'] !== ($claims->sv ?? 0)) { throw new HttpError(401, 'Usuario no disponible o contraseña restablecida'); }
+        $user['_session_version']=(int)$user['session_version']; unset($user['session_version']);
         $user['id'] = (string)$user['id'];
         return $user;
     }

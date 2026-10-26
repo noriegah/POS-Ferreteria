@@ -35,16 +35,16 @@ final class InventoryClient
         return $data;
     }
     // Devuelve la compra original: Inventario obtiene las cantidades de su propio registro.
-    public static function restore(string $reference): void
+    public static function restore(string $reference,bool $pending=false): void
     {
         $base=getenv('INVENTARIO_URL'); $key=getenv('VENTAS_INTERNAL_KEY');
         if(!$base || !$key) throw new HttpError(503,'Comunicación de Inventario sin configurar');
-        $curl=curl_init(rtrim($base,'/').'/ventas/devolver');
+        $curl=curl_init(rtrim($base,'/').($pending ? '/ventas/liberar-reserva' : '/ventas/devolver'));
         curl_setopt_array($curl,[CURLOPT_POST=>true,CURLOPT_POSTFIELDS=>json_encode(['referencia'=>$reference],JSON_THROW_ON_ERROR),
             CURLOPT_HTTPHEADER=>['Content-Type: application/json','Accept: application/json','Authorization: '.$_SERVER['HTTP_AUTHORIZATION'],'X-Ventas-Key: '.$key],
             CURLOPT_RETURNTRANSFER=>true,CURLOPT_CONNECTTIMEOUT=>2,CURLOPT_TIMEOUT=>8,CURLOPT_FOLLOWLOCATION=>false]);
         $raw=curl_exec($curl); $status=curl_getinfo($curl,CURLINFO_HTTP_CODE); curl_close($curl);
-        if($raw===false || $status!==200) throw new HttpError(503,'La anulación está pendiente de devolver existencias. Reintenta desde el historial');
+        if($raw===false || $status!==200) throw new HttpError(503,$pending ? 'No se liberaron las existencias. Reintenta Cancelar venta' : 'La anulación está pendiente de devolver existencias. Reintenta desde el historial');
         try { $reply=json_decode($raw,true,16,JSON_THROW_ON_ERROR); }
         catch(JsonException $error) { throw new HttpError(503,'No se confirmó la devolución. Reintenta la anulación'); }
         if(($reply['referencia'] ?? null)!==$reference || ($reply['devuelta'] ?? null)!==true) throw new HttpError(503,'No se confirmó la devolución. Reintenta la anulación');

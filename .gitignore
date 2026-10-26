@@ -16,3 +16,5 @@ uploads/facturas-qr/*
 # Recursos del frontend incluidos deliberadamente para ejecutar sin CDN.
 !frontend/vendor/
 !frontend/vendor/**
+
+ferresync-migracion.sql

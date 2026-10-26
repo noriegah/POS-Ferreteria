@@ -69,3 +69,23 @@ Inventario ofrece POST /ventas/descontar y POST /ventas/devolver para Ventas. Re
 ## PayPal Sandbox
 
 GET /api/ventas/pagos/config devuelve disponibilidad y tasa sin credenciales. POST /api/ventas/{id}/pago/orden prepara o recupera la orden, y POST /api/ventas/{id}/pago/confirmar verifica y captura el cobro. Son rutas del propietario o administrador; config requiere usuario activo. Al registrar una compra, metodo_pago puede ser efectivo (predeterminado) o tarjeta (PayPal Sandbox). Tarjeta requiere credenciales configuradas; la factura devuelve 409 mientras la venta esté pendiente_pago. Ver integraciones/pagos.md.
+
+## Cuadre de caja
+
+GET/POST `/api/ventas/cajas`: historial y apertura con `fondo`. GET `/api/ventas/cajas/{id}`: detalle. POST `/api/ventas/cajas/{id}/cerrar`: cierre con `contado` y `observaciones`. JWT obligatorio. Cada cajero abre y cierra su turno; el administrador consulta todos. Ver [guía](cuadre-caja.md).
+
+### Restablecimiento administrativo
+
+`POST /api/auth/users/{id}/password`, solo administrador activo. JSON: `admin_password` (clave del administrador), `password` y `confirmacion` (nueva clave de la cuenta). Respuesta 200 sin claves ni hashes. Errores: 403 sin permiso o confirmación administrativa incorrecta, 404 cuenta inexistente, 422 datos inválidos. Revoca las sesiones de la cuenta y registra la operación en `auth_db.usuario_password_eventos`.
+
+### Renovación de sesión
+
+`POST /api/auth/refresh`: requiere Bearer vigente de una cuenta activa y con la versión de sesión actual. Devuelve `access_token`, `token_type` y `expires_in`. La interfaz renueva el JWT antes de vencer y mantiene un temporizador independiente de 15 minutos de inactividad. La renovación no cuenta como interacción.
+
+### Validación pública limitada de factura
+
+`GET /api/ventas/facturas/validar?referencia=...&firma=...`: requiere firma HMAC válida del enlace QR, no JWT. Devuelve estado y datos no personales del comprobante. Referencia o firma inválidas: 404. No habilita listado ni descarga pública de las facturas completas.
+
+### Cancelación de PayPal pendiente
+
+`POST /api/ventas/{id}/pago/cancelar`: propietario cajero o administrador. Solo ventas PayPal sin cobro ni captura incierta. Consulta PayPal, bloquea nuevos cobros, devuelve stock por REST de forma idempotente y conserva la venta anulada y su auditoría. Una captura ya procesada o incierta requiere verificación; no se devuelve stock como si no hubiera pago. Reintentar esta operación termina una devolución interrumpida. Inventario expone `/ventas/liberar-reserva` solo con clave interna y JWT; un cajero únicamente puede devolver la reserva que originó. No amplía el permiso de anular ventas cobradas.

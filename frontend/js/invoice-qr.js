@@ -41,7 +41,7 @@ const InvoiceQr = (() => {
             await image().decode();
             if (current !== version) return;
             image().hidden = false;
-            status().textContent = "Escanea para leer el número y la referencia de esta factura.";
+            status().textContent = "Escanea para consultar la validez y el estado de esta factura.";
         } catch (error) {
             if (current !== version || error.name === "AbortError") return;
             image().hidden = true;
